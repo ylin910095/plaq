@@ -78,6 +78,7 @@ def bicgstab(
     x0: torch.Tensor | None = None,
     tol: float = 1e-10,
     maxiter: int = 1000,
+    callback: Callable[[torch.Tensor], None] | None = None,
 ) -> tuple[torch.Tensor, BiCGStabInfo]:
     """BiCGStab solver for general non-Hermitian systems.
 
@@ -97,6 +98,9 @@ def bicgstab(
         Relative tolerance for convergence: ||r|| / ||b|| < tol.
     maxiter : int
         Maximum number of iterations.
+    callback : Callable[[torch.Tensor], None], optional
+        User-supplied function to call after each iteration.
+        Called as callback(xk) where xk is the current solution vector.
 
     Returns
     -------
@@ -185,6 +189,9 @@ def bicgstab(
             x = x + alpha * p
             final_residual = s_norm / b_norm
             converged = True
+            # Call user callback with current solution
+            if callback is not None:
+                callback(x)
             break
 
         # t = A @ s
@@ -200,6 +207,10 @@ def bicgstab(
 
         # x = x + alpha * p + omega * s
         x = x + alpha * p + omega * s
+
+        # Call user callback with current solution
+        if callback is not None:
+            callback(x)
 
         # r = s - omega * t
         r = s - omega * t

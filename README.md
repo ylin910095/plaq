@@ -2,7 +2,7 @@
 
 A lattice gauge theory toolkit for Python, built on PyTorch.
 
-[![CI](https://github.com/YOUR_USERNAME/plaq/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/plaq/actions/workflows/ci.yml)
+[![CI](https://github.com/ylin910095/plaq/actions/workflows/ci.yml/badge.svg)](https://github.com/ylin910095/plaq/actions/workflows/ci.yml)
 
 ## Features
 

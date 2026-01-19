@@ -35,19 +35,29 @@ pip install -e .
 ```python
 import plaq as pq
 
-# Check the version
-print(pq.__version__)  # 0.1.0
+# Create a lattice
+lat = pq.Lattice((4, 4, 4, 8))
+print(f"Volume: {lat.volume}")  # 512
 
-# Check default configuration
-print(pq.config.DEFAULT_DTYPE)  # torch.complex128
-print(pq.config.DEFAULT_DEVICE)  # cpu
+# Create boundary conditions and build neighbor tables
+bc = pq.BoundaryCondition()  # Antiperiodic in time, periodic in space
+lat.build_neighbor_tables(bc)
 
-# Modify configuration if needed
-import torch
-pq.config.DEFAULT_DTYPE = torch.complex64
+# Create fields
+U = pq.GaugeField.identity(lat)  # Identity gauge field (free field)
+psi = pq.SpinorField.random(lat)  # Random spinor field
 
-# Reset to defaults
-pq.config.reset()
+# Apply Wilson Dirac operator
+params = pq.WilsonParams(mass=0.1)
+result = pq.apply_M(U, psi, params, bc)
+
+# Access gamma matrices
+print(pq.gamma[0])  # gamma_0
+print(pq.gamma5)    # gamma_5
+
+# Layout conversion for advanced use
+psi_eo = psi.as_layout("eo")  # Convert to even-odd layout
+print(psi_eo.eo.shape)  # [2, 256, 4, 3]
 ```
 
 ## Development
@@ -117,23 +127,31 @@ uv run pre-commit run --all-files --hook-stage manual
 plaq/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions CI workflow
+│       └── ci.yml              # GitHub Actions CI workflow
 ├── docs/
-│   ├── api/                # API documentation
-│   ├── conf.py             # Sphinx configuration
-│   └── index.rst           # Documentation home
+│   ├── api/                    # API documentation
+│   ├── conf.py                 # Sphinx configuration
+│   └── index.rst               # Documentation home
 ├── src/
 │   └── plaq/
-│       ├── __init__.py     # Package entry point
-│       ├── _version.py     # Version info
-│       ├── config.py       # Global configuration
-│       ├── py.typed        # PEP 561 type marker
-│       └── utils/          # Utility functions
+│       ├── __init__.py         # Package entry point
+│       ├── _version.py         # Version info
+│       ├── config.py           # Global configuration
+│       ├── lattice.py          # Lattice and BoundaryCondition
+│       ├── layouts.py          # EO packing/unpacking
+│       ├── fields.py           # SpinorField, GaugeField
+│       ├── conventions/        # Gamma matrices (MILC)
+│       ├── operators/          # Wilson Dirac operator
+│       ├── py.typed            # PEP 561 type marker
+│       └── utils/              # Utility functions
 ├── tests/
-│   └── test_placeholder.py # Placeholder tests
-├── .pyre_configuration     # Pyre type checker config
-├── pyproject.toml          # Project configuration
-└── README.md               # This file
+│   ├── test_gamma.py           # Gamma matrix tests
+│   ├── test_layouts.py         # Layout packing tests
+│   ├── test_wilson.py          # Wilson operator tests
+│   └── test_placeholder.py     # Basic tests
+├── .pyre_configuration         # Pyre type checker config
+├── pyproject.toml              # Project configuration
+└── README.md                   # This file
 ```
 
 ## License

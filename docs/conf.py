@@ -89,5 +89,9 @@ myst_enable_extensions = [
     "colon_fence",
 ]
 
-# Suppress the mathjax override warning from myst-parser
-suppress_warnings = ["myst.mathjax"]
+# Suppress warnings
+suppress_warnings = [
+    "myst.mathjax",
+    "autodoc",  # Duplicate object descriptions from re-exported symbols
+    "ref.python",  # Cross-reference warnings for re-exported symbols
+]

@@ -1,0 +1,75 @@
+# Pre-commit configuration for plaq
+# See https://pre-commit.com for more information
+#
+# Default hooks run on every commit (fast, < 10s)
+# Manual hooks (pyre/tests/docs) run with: uv run pre-commit run --all-files --hook-stage manual
+
+default_install_hook_types: [pre-commit]
+fail_fast: false
+
+repos:
+  # Built-in hooks for basic hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  # Ruff formatting and linting (using local uv environment)
+  - repo: local
+    hooks:
+      # Format code with ruff
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      # Lint and auto-fix with ruff
+      - id: ruff-check-fix
+        name: ruff check --fix
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      # Lint check (no auto-fix, ensure clean)
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check
+        language: system
+        types: [python]
+        pass_filenames: true
+
+  # Optional/manual hooks - run with: uv run pre-commit run --all-files --hook-stage manual
+  - repo: local
+    hooks:
+      # Pyre type checking
+      - id: pyre
+        name: pyre check
+        entry: uv run pyre check
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
+      # Pytest (fast subset)
+      - id: pytest
+        name: pytest -q
+        entry: uv run pytest -q
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
+      # Sphinx docs build
+      - id: docs-build
+        name: sphinx docs build
+        entry: uv run sphinx-build -b html docs docs/_build -q
+        language: system
+        pass_filenames: false
+        stages: [manual]

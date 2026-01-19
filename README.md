@@ -88,6 +88,29 @@ uv run sphinx-build -b html docs docs/_build
 
 Then open `docs/_build/index.html` in your browser.
 
+### Pre-commit Hooks
+
+The repository uses [pre-commit](https://pre-commit.com/) to enforce formatting, linting, and code hygiene before commits.
+
+**Install the hooks:**
+
+```bash
+uv sync --all-groups
+uv run pre-commit install
+```
+
+**Run on all files:**
+
+```bash
+uv run pre-commit run --all-files
+```
+
+**Run full checks (including type checking, tests, and docs build):**
+
+```bash
+uv run pre-commit run --all-files --hook-stage manual
+```
+
 ## Project Structure
 
 ```

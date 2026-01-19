@@ -29,6 +29,7 @@ dependencies = [
 dev = [
     "ruff>=0.4.0",
     "pyre-check>=0.9.0",
+    "pre-commit>=4.0.0",
 ]
 docs = [
     "sphinx>=7.0.0",

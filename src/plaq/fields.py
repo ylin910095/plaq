@@ -425,10 +425,16 @@ class GaugeField:
         dtype: Any = None,
         device: Any = None,
     ) -> GaugeField:
-        """Create a random gauge field.
+        """Create a random SU(3) gauge field sampled from the Haar measure.
 
-        Note: This creates random complex matrices, NOT SU(3) matrices.
-        For proper SU(3) configurations, use dedicated projection methods.
+        Uses the standard algorithm for sampling uniform random unitary matrices:
+        1. Generate a random complex Gaussian matrix Z
+        2. Compute the QR decomposition: Z = Q R
+        3. Fix the signs of R's diagonal to make Q unique
+        4. Project to SU(3) by dividing by det(Q)^(1/3)
+
+        This produces matrices uniformly distributed according to the
+        Haar measure on SU(3).
 
         Parameters
         ----------
@@ -442,7 +448,12 @@ class GaugeField:
         Returns
         -------
         GaugeField
-            Random gauge field (not SU(3) projected).
+            Random SU(3) gauge field sampled from Haar measure.
+
+        References
+        ----------
+        .. [1] Mezzadri, F. (2007). "How to generate random matrices from the
+               classical compact groups." Notices of the AMS 54.5: 592-604.
 
         """
         if dtype is None:
@@ -451,7 +462,37 @@ class GaugeField:
             device = lattice.device
 
         shape = (4, lattice.volume, 3, 3)
-        data = torch.randn(shape, dtype=dtype, device=device)
+
+        # Generate random complex Gaussian matrices
+        # Real and imaginary parts are independent standard normal
+        Z_real = torch.randn(shape, dtype=torch.float64, device=device)
+        Z_imag = torch.randn(shape, dtype=torch.float64, device=device)
+        Z = torch.complex(Z_real, Z_imag)
+
+        # QR decomposition: Z = Q @ R
+        # torch.linalg.qr returns Q with shape [..., 3, 3]
+        Q, R = torch.linalg.qr(Z)
+
+        # Fix the phase ambiguity: make diagonal of R positive real
+        # This ensures Q is uniquely determined and uniformly distributed
+        diag_R = torch.diagonal(R, dim1=-2, dim2=-1)  # [..., 3]
+        diag_phases = diag_R / torch.abs(diag_R)  # Unit complex numbers
+        # Multiply each column of Q by the conjugate of the corresponding phase
+        Q = Q * diag_phases.unsqueeze(-2).conj()
+
+        # Now Q is a random unitary matrix (Haar-distributed on U(3))
+        # Project to SU(3) by dividing by det(Q)^(1/3)
+        det_Q = torch.linalg.det(Q)  # [...] complex
+        # Take cube root of determinant: det^(1/3) = |det|^(1/3) * exp(i*arg/3)
+        det_phase = det_Q / torch.abs(det_Q)  # Unit complex number
+        det_phase_third = torch.pow(det_phase, 1.0 / 3.0)  # Phase^(1/3)
+
+        # Divide all elements by det^(1/3) to get det = 1
+        Q = Q / det_phase_third.unsqueeze(-1).unsqueeze(-1)
+
+        # Convert to target dtype
+        data = Q.to(dtype=dtype)
+
         return cls(data, lattice)
 
     def clone(self) -> GaugeField:

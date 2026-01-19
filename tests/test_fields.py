@@ -172,8 +172,8 @@ class TestHaarMeasureDistribution:
         im_traces = traces.imag.reshape(-1)
 
         # Check means are close to 0
-        mean_re = re_traces.mean().item()
-        mean_im = im_traces.mean().item()
+        mean_re: float = re_traces.mean().item()
+        mean_im: float = im_traces.mean().item()
 
         assert abs(mean_re) < 0.1, f"E[Re(Tr(U))] = {mean_re:.4f}, expected ~0"
         assert abs(mean_im) < 0.1, f"E[Im(Tr(U))] = {mean_im:.4f}, expected ~0"

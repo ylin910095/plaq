@@ -222,7 +222,7 @@ class TestSolverResidualMonotonicity:
     """Test residual behavior of solvers."""
 
     def test_cg_residual_decreases(self) -> None:
-        """Test that CG residual decreases monotonically for SPD system."""
+        """Test that CG residual decreases monotonically using callback."""
         lat = pq.Lattice((2, 2, 2, 2))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
@@ -231,43 +231,29 @@ class TestSolverResidualMonotonicity:
         params = pq.WilsonParams(mass=0.5)  # Larger mass for faster convergence
 
         torch.manual_seed(456)
+        b = pq.SpinorField.random(lat)
 
-        # Create random b
-        b_data = torch.randn(lat.volume, 4, 3, dtype=torch.complex128)
-
-        # Track residuals manually
+        # Track residuals using callback
         residuals: list[float] = []
 
-        def A_apply(x: torch.Tensor) -> torch.Tensor:
-            x_field = pq.SpinorField(x, lat)
-            return pq.apply_MdagM(U, x_field, params, bc).site
+        # Apply Mdag to b for RHS norm calculation
+        Mdag_b = pq.apply_Mdag(U, b, params, bc)
+        b_norm = torch.linalg.norm(Mdag_b.site.flatten()).item()
 
-        # Apply Mdag to b
-        b_field = pq.SpinorField(b_data, lat)
-        Mdag_b = pq.apply_Mdag(U, b_field, params, bc).site
-        b_norm = torch.linalg.norm(Mdag_b.flatten()).item()
+        def callback(x: pq.SpinorField) -> None:
+            """Callback to track residual at each iteration."""
+            # Compute MdagM x
+            MdagM_x = pq.apply_MdagM(U, x, params, bc)
+            # Compute residual ||MdagM x - Mdag b||
+            residual_vec = MdagM_x.site - Mdag_b.site
+            residual_norm = torch.linalg.norm(residual_vec.flatten()).item()
+            rel_residual = residual_norm / b_norm
+            residuals.append(rel_residual)
 
-        # Run CG with callback to track residuals
-        x = torch.zeros_like(b_data)
-        r = Mdag_b.clone()
-        p = r.clone()
-        rr = torch.vdot(r.flatten(), r.flatten()).real
-
-        for _ in range(50):
-            residuals.append((torch.sqrt(rr) / b_norm).item())  # pyright: ignore[reportAttributeAccessIssue]
-
-            if residuals[-1] < 1e-12:
-                break
-
-            Ap = A_apply(p)
-            pAp = torch.vdot(p.flatten(), Ap.flatten()).real
-            alpha = rr / pAp
-            x = x + alpha * p
-            r = r - alpha * Ap
-            rr_new = torch.vdot(r.flatten(), r.flatten()).real
-            beta = rr_new / rr
-            p = r + beta * p
-            rr = rr_new
+        # Solve with callback
+        _x, info = pq.solve(
+            U, b, method="cg", equation="MdagM", params=params, bc=bc, callback=callback
+        )
 
         # Check monotonic decrease (with small tolerance for numerical errors)
         for i in range(1, len(residuals)):
@@ -277,7 +263,9 @@ class TestSolverResidualMonotonicity:
             )
 
         # Check convergence
+        assert info.converged, f"CG did not converge: {info}"
         assert residuals[-1] < 1e-10, f"Final residual too large: {residuals[-1]}"
+        assert len(residuals) > 0, "Callback was not called"
 
 
 class TestEvenOddConsistency:
@@ -376,6 +364,135 @@ class TestSolverDtype:
         # Explicit dtype - skip complex64 as Wilson operator needs internal dtype conversion
         # x64, _ = pq.solve(U, b, dtype=torch.complex64, tol=1e-6, maxiter=100)
         # assert x64.dtype == torch.complex64
+
+
+class TestSolverCallbacks:
+    """Test solver callback functionality."""
+
+    def test_cg_callback_called(self) -> None:
+        """Test that CG callback is called at each iteration."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
+
+        U = pq.GaugeField.identity(lat)
+        params = pq.WilsonParams(mass=0.5)
+        b = pq.SpinorField.random(lat)
+
+        # Track callback invocations
+        callback_count = [0]
+        solutions: list[pq.SpinorField] = []
+
+        def callback(x: pq.SpinorField) -> None:
+            callback_count[0] += 1
+            solutions.append(x)
+
+        # Solve with callback
+        _x, info = pq.solve(
+            U, b, method="cg", equation="MdagM", params=params, bc=bc, callback=callback, tol=1e-8
+        )
+
+        # Verify callback was called
+        assert callback_count[0] > 0, "Callback was not called"
+        # Note: callback may be called one less time than iters if convergence is detected
+        # at the beginning of an iteration (before callback is invoked)
+        assert callback_count[0] >= info.iters - 1, (
+            f"Callback count {callback_count[0]} too low for {info.iters} iterations"
+        )
+        assert callback_count[0] <= info.iters, (
+            f"Callback count {callback_count[0]} exceeds iterations {info.iters}"
+        )
+        assert len(solutions) == callback_count[0], (
+            "Number of solutions does not match callback count"
+        )
+
+        # Verify solutions are different (convergence)
+        if len(solutions) > 1:
+            diff = torch.abs(solutions[-1].site - solutions[0].site).max().item()
+            assert diff > 0, "Solution did not change during iterations"
+
+    def test_bicgstab_callback_called(self) -> None:
+        """Test that BiCGStab callback is called at each iteration."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
+
+        U = pq.GaugeField.identity(lat)
+        params = pq.WilsonParams(mass=0.5)
+        torch.manual_seed(123)
+        b = pq.SpinorField.random(lat)
+
+        # Track callback invocations
+        callback_count = [0]
+
+        def callback(_x: pq.SpinorField) -> None:
+            callback_count[0] += 1
+
+        # Solve with callback
+        _x, info = pq.solve(
+            U, b, method="bicgstab", equation="M", params=params, bc=bc, callback=callback, tol=1e-8
+        )
+
+        # Verify callback was called
+        assert callback_count[0] > 0, "Callback was not called"
+        # Note: callback may be called one less time than iters if convergence is detected
+        # at the beginning of an iteration (before callback is invoked)
+        assert callback_count[0] >= info.iters - 1, (
+            f"Callback count {callback_count[0]} too low for {info.iters} iterations"
+        )
+        assert callback_count[0] <= info.iters, (
+            f"Callback count {callback_count[0]} exceeds iterations {info.iters}"
+        )
+
+    def test_callback_with_eo_preconditioning(self) -> None:
+        """Test callback works with even-odd preconditioning."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
+
+        U = pq.GaugeField.identity(lat)
+        params = pq.WilsonParams(mass=0.2)
+        torch.manual_seed(789)
+        b = pq.SpinorField.random(lat)
+
+        # Track callback invocations
+        callback_count = [0]
+
+        def callback(x: pq.SpinorField) -> None:
+            callback_count[0] += 1
+            # Verify we receive a SpinorField
+            assert isinstance(x, pq.SpinorField), "Callback argument is not a SpinorField"
+            # Verify it has correct shape
+            assert x.site.shape == (lat.volume, 4, 3), "Callback solution has incorrect shape"
+
+        # Solve with EO preconditioning and callback
+        _x, _info = pq.solve(
+            U,
+            b,
+            equation="MdagM",
+            precond="eo",
+            params=params,
+            bc=bc,
+            callback=callback,
+            tol=1e-8,
+        )
+
+        # Verify callback was called (at least once for the outer solve)
+        assert callback_count[0] > 0, "Callback was not called with EO preconditioning"
+
+    def test_callback_none_works(self) -> None:
+        """Test that None callback works (no callback provided)."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
+
+        U = pq.GaugeField.identity(lat)
+        b = pq.SpinorField.random(lat)
+
+        # Solve without callback (should not error)
+        _x, info = pq.solve(U, b, callback=None, tol=1e-8)
+
+        assert info.converged, "Solver did not converge without callback"
 
 
 class TestSolverAPI:

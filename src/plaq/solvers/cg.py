@@ -72,6 +72,7 @@ def cg(
     x0: torch.Tensor | None = None,
     tol: float = 1e-10,
     maxiter: int = 1000,
+    callback: Callable[[torch.Tensor], None] | None = None,
 ) -> tuple[torch.Tensor, CGInfo]:
     """Conjugate Gradient solver for Hermitian positive-definite systems.
 
@@ -90,6 +91,9 @@ def cg(
         Relative tolerance for convergence: ||r|| / ||b|| < tol.
     maxiter : int
         Maximum number of iterations.
+    callback : Callable[[torch.Tensor], None], optional
+        User-supplied function to call after each iteration.
+        Called as callback(xk) where xk is the current solution vector.
 
     Returns
     -------
@@ -149,6 +153,10 @@ def cg(
 
         # x = x + alpha * p
         x = x + alpha * p
+
+        # Call user callback with current solution
+        if callback is not None:
+            callback(x)
 
         # r = r - alpha * Ap
         r = r - alpha * Ap

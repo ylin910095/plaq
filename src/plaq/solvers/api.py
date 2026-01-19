@@ -39,6 +39,8 @@ from plaq.solvers.bicgstab import bicgstab
 from plaq.solvers.cg import cg
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from plaq.lattice import Lattice
 
 
@@ -80,6 +82,7 @@ def solve(
     dtype: torch.dtype = torch.complex128,
     params: WilsonParams | None = None,
     bc: BoundaryCondition | None = None,
+    callback: Callable[[SpinorField], None] | None = None,
 ) -> tuple[SpinorField, SolverInfo]:
     """Solve a lattice QCD linear system.
 
@@ -127,6 +130,9 @@ def solve(
         Wilson operator parameters. If None, uses default mass=0.1.
     bc : BoundaryCondition, optional
         Boundary conditions. If None, uses default (antiperiodic in time).
+    callback : Callable[[SpinorField], None], optional
+        User-supplied function to call after each iteration.
+        Called as callback(xk) where xk is the current solution spinor field.
 
     Returns
     -------
@@ -197,7 +203,7 @@ def solve(
     # Handle preconditioning
     if precond == "eo":
         return _solve_preconditioned_eo(
-            U_work, b_data, lattice, params, bc, equation, method, tol, maxiter, dtype
+            U_work, b_data, lattice, params, bc, equation, method, tol, maxiter, dtype, callback
         )
     elif precond is not None:
         msg = f"Unsupported preconditioner: {precond}. Use 'eo' or None."
@@ -226,11 +232,22 @@ def solve(
         rhs_field = apply_Mdag(U_work, b_field_work, params, bc)
         rhs = rhs_field.site
 
+    # Wrap callback if provided
+    tensor_callback = None
+    if callback is not None:
+        callback_fn = callback  # Capture in local scope for type checker
+
+        def tensor_callback(x_data: torch.Tensor) -> None:
+            x_field = SpinorField(x_data, lattice, layout="site")
+            callback_fn(x_field)
+
     # Select and run solver
     if method == "cg":
-        x_data, solver_info = cg(A_apply, rhs, tol=tol, maxiter=maxiter)
+        x_data, solver_info = cg(A_apply, rhs, tol=tol, maxiter=maxiter, callback=tensor_callback)
     else:
-        x_data, solver_info = bicgstab(A_apply, rhs, tol=tol, maxiter=maxiter)
+        x_data, solver_info = bicgstab(
+            A_apply, rhs, tol=tol, maxiter=maxiter, callback=tensor_callback
+        )
 
     # Wrap result
     x = SpinorField(x_data, lattice, layout="site")
@@ -256,6 +273,7 @@ def _solve_preconditioned_eo(
     tol: float,
     maxiter: int,
     dtype: torch.dtype,
+    callback: Callable[[SpinorField], None] | None = None,
 ) -> tuple[SpinorField, SolverInfo]:
     """Solve with even-odd preconditioning.
 
@@ -268,9 +286,18 @@ def _solve_preconditioned_eo(
         msg = "Even-odd preconditioning is only supported for equation='MdagM'."
         raise ValueError(msg)
 
+    # Wrap callback if provided (for EO solver which works with site layout)
+    tensor_callback = None
+    if callback is not None:
+        callback_fn = callback  # Capture in local scope for type checker
+
+        def tensor_callback(x_data: torch.Tensor) -> None:
+            x_field = SpinorField(x_data, lattice, layout="site")
+            callback_fn(x_field)
+
     # Delegate to EO solver
     x_data, solver_info = solve_eo_preconditioned(
-        U, b_data, lattice, params, bc, tol, maxiter, dtype
+        U, b_data, lattice, params, bc, tol, maxiter, dtype, tensor_callback
     )
 
     x = SpinorField(x_data, lattice, layout="site")

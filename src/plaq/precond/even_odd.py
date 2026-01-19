@@ -49,6 +49,7 @@ size, both of which speed up convergence.
 
 """
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import torch
@@ -358,6 +359,7 @@ def solve_eo_preconditioned(
     tol: float,
     maxiter: int,
     dtype: torch.dtype,
+    callback: Callable[[torch.Tensor], None] | None = None,
 ) -> tuple[torch.Tensor, CGInfo]:
     """Solve MdagM system with even-odd preconditioning.
 
@@ -399,6 +401,9 @@ def solve_eo_preconditioned(
         Maximum iterations.
     dtype : torch.dtype
         Working dtype.
+    callback : Callable[[torch.Tensor], None], optional
+        User-supplied function to call after each iteration of the outer CG solve.
+        Called as callback(xk) where xk is the current solution in site layout.
 
     Returns
     -------
@@ -490,8 +495,22 @@ def solve_eo_preconditioned(
         # Schur complement: (MdagM)_ee - (MdagM)_eo (MdagM)_oo^{-1} (MdagM)_oe
         return Mee_x - Meo_Moo_inv_Moe_x
 
+    # Wrap callback to convert even-site layout to full site layout
+    even_callback = None
+    if callback is not None:
+        callback_fn = callback  # Capture in local scope for type checker
+
+        def even_callback(x_e_iter: torch.Tensor) -> None:
+            # Reconstruct temporary full solution for callback
+            # Note: odd sites are zero during this solve
+            x_eo_temp = torch.stack([x_e_iter, torch.zeros_like(x_e_iter)], dim=0)
+            x_full_temp = unpack_eo(x_eo_temp, lattice)
+            callback_fn(x_full_temp)
+
     # Solve Schur x_e = rhs_e using CG
-    x_e, info_even = cg(apply_schur_MdagM_full, rhs_e, tol=tol, maxiter=maxiter)
+    x_e, info_even = cg(
+        apply_schur_MdagM_full, rhs_e, tol=tol, maxiter=maxiter, callback=even_callback
+    )
 
     # Step 5: Reconstruct x_o
     # x_o = (MdagM)_oo^{-1} (c_o - (MdagM)_oe x_e)

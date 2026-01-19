@@ -2,7 +2,7 @@
 # See https://pre-commit.com for more information
 #
 # Default hooks run on every commit (fast, < 10s)
-# Manual hooks (pyre/tests/docs) run with: uv run pre-commit run --all-files --hook-stage manual
+# Manual hooks (pyrefly/tests/docs) run with: uv run pre-commit run --all-files --hook-stage manual
 
 default_install_hook_types: [pre-commit]
 fail_fast: false
@@ -48,10 +48,10 @@ repos:
   # Optional/manual hooks - run with: uv run pre-commit run --all-files --hook-stage manual
   - repo: local
     hooks:
-      # Pyre type checking
-      - id: pyre
-        name: pyre check
-        entry: uv run pyre check
+      # Pyrefly type checking
+      - id: pyrefly
+        name: pyrefly check
+        entry: uv run pyrefly check
         language: system
         types: [python]
         pass_filenames: false

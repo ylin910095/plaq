@@ -66,6 +66,61 @@ class TestReferenceSolveM:
         assert rel_error < 1e-10, f"Relative error too large: {rel_error}"
         assert residual < 1e-12, f"Residual too large: {residual}"
 
+    def test_reference_solve_M_random_gauge(self) -> None:
+        """Test BiCGStab matches dense solve on 2^4 lattice with random gauge."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition(fermion_bc_time=1.0)
+        lat.build_neighbor_tables(bc)
+
+        # Random SU(3) gauge field
+        torch.manual_seed(999)
+        U = pq.GaugeField.random(lat)
+        params = pq.WilsonParams(mass=0.2)  # Slightly higher mass for stability
+
+        torch.manual_seed(42)
+        b = pq.SpinorField.random(lat)
+
+        # Build dense M matrix
+        V = lat.volume
+        n_dof = V * 4 * 3
+        M_dense = torch.zeros(n_dof, n_dof, dtype=torch.complex128)
+
+        for i in range(n_dof):
+            e_i = torch.zeros(V, 4, 3, dtype=torch.complex128)
+            site = i // 12
+            spin = (i % 12) // 3
+            color = i % 3
+            e_i[site, spin, color] = 1.0
+
+            e_i_field = pq.SpinorField(e_i, lat)
+            M_e_i = pq.apply_M(U, e_i_field, params, bc)
+            M_dense[:, i] = M_e_i.site.flatten()
+
+        # Dense solve
+        b_flat = b.site.flatten()
+        x_dense = torch.linalg.solve(M_dense, b_flat)
+
+        # BiCGStab solve
+        x_bicgstab, info = pq.solve(
+            U, b, method="bicgstab", equation="M", params=params, bc=bc, tol=1e-10
+        )
+
+        # Compare
+        x_bicgstab_flat = x_bicgstab.site.flatten()
+        rel_error = (
+            torch.linalg.norm(x_bicgstab_flat - x_dense) / torch.linalg.norm(x_dense)
+        ).item()
+
+        # Compute residual
+        Mx = pq.apply_M(U, x_bicgstab, params, bc)
+        residual = (
+            torch.linalg.norm(Mx.site.flatten() - b_flat) / torch.linalg.norm(b_flat)
+        ).item()
+
+        assert info.converged, f"BiCGStab did not converge: {info}"
+        assert rel_error < 1e-8, f"Relative error too large: {rel_error}"
+        assert residual < 1e-10, f"Residual too large: {residual}"
+
 
 class TestReferenceSolveMdagM:
     """Test CG solver against dense reference for MdagM x = Mdag b."""
@@ -114,6 +169,53 @@ class TestReferenceSolveMdagM:
 
         assert info.converged, f"CG did not converge: {info}"
         assert rel_error < 1e-10, f"Relative error too large: {rel_error}"
+
+    def test_reference_solve_MdagM_random_gauge(self) -> None:
+        """Test CG matches dense solve on 2^4 lattice with random gauge."""
+        lat = pq.Lattice((2, 2, 2, 2))
+        bc = pq.BoundaryCondition(fermion_bc_time=1.0)
+        lat.build_neighbor_tables(bc)
+
+        # Random SU(3) gauge field
+        torch.manual_seed(888)
+        U = pq.GaugeField.random(lat)
+        params = pq.WilsonParams(mass=0.2)
+
+        torch.manual_seed(123)
+        b = pq.SpinorField.random(lat)
+
+        # Build dense MdagM matrix
+        V = lat.volume
+        n_dof = V * 4 * 3
+        MdagM_dense = torch.zeros(n_dof, n_dof, dtype=torch.complex128)
+
+        for i in range(n_dof):
+            e_i = torch.zeros(V, 4, 3, dtype=torch.complex128)
+            site = i // 12
+            spin = (i % 12) // 3
+            color = i % 3
+            e_i[site, spin, color] = 1.0
+
+            e_i_field = pq.SpinorField(e_i, lat)
+            MdagM_e_i = pq.apply_MdagM(U, e_i_field, params, bc)
+            MdagM_dense[:, i] = MdagM_e_i.site.flatten()
+
+        # RHS = Mdag b
+        Mdag_b = pq.apply_Mdag(U, b, params, bc)
+        rhs = Mdag_b.site.flatten()
+
+        # Dense solve
+        x_dense = torch.linalg.solve(MdagM_dense, rhs)
+
+        # CG solve
+        x_cg, info = pq.solve(U, b, method="cg", equation="MdagM", params=params, bc=bc, tol=1e-10)
+
+        # Compare
+        x_cg_flat = x_cg.site.flatten()
+        rel_error = (torch.linalg.norm(x_cg_flat - x_dense) / torch.linalg.norm(x_dense)).item()
+
+        assert info.converged, f"CG did not converge: {info}"
+        assert rel_error < 1e-8, f"Relative error too large: {rel_error}"
 
 
 class TestSolverResidualMonotonicity:

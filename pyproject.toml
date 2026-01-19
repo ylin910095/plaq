@@ -38,6 +38,7 @@ docs = [
 ]
 test = [
     "pytest>=8.0.0",
+    "numpy>=1.24.0",
 ]
 
 [tool.hatch.build.targets.wheel]

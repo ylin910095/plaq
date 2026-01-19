@@ -52,7 +52,6 @@ class TestGaugeFieldRandom:
         assert phase_error < 1e-12, f"arg(det) differs from 0 by {phase_error}"
 
 
-
 class TestHaarMeasureDistribution:
     """Tests for proper Haar measure distribution of SU(3) matrices."""
 

@@ -56,7 +56,6 @@ from dataclasses import dataclass
 
 import torch
 
-from plaq.conventions.gamma_milc import P_minus, P_plus
 from plaq.fields import GaugeField, SpinorField
 from plaq.lattice import BoundaryCondition, Lattice
 
@@ -294,12 +293,6 @@ def _apply_wilson_site(
     # Initialize result with diagonal term: (m0 + 4r) * psi
     result = (m0 + 4.0 * r) * psi_site.clone()
 
-    # Get projectors for each direction
-    # P_minus = (I - gamma_mu)/2 for forward hopping
-    # P_plus = (I + gamma_mu)/2 for backward hopping
-    [P_minus(mu, dtype=dtype, device=device) for mu in range(4)]
-    [P_plus(mu, dtype=dtype, device=device) for mu in range(4)]
-
     for mu in range(4):
         # Get gauge links for this direction
         U_mu = gauge[mu]  # [V, 3, 3]
@@ -315,23 +308,7 @@ def _apply_wilson_site(
         # Apply boundary phase
         U_psi_fwd = U_psi_fwd * fwd_phase.unsqueeze(-1).unsqueeze(-1)
 
-        # Apply (r - gamma_mu) = 2r * P_minus
-        # (r - gamma_mu) = r*I - gamma_mu = 2r * (I - gamma_mu)/2 = 2r * P_minus
-        # Actually: r - gamma_mu, and P_minus = (I - gamma_mu)/2
-        # So r*I - gamma_mu = r*I - gamma_mu
-        # Using projectors: (I - gamma_mu) = 2*P_minus
-        # So r - gamma_mu = r*I - gamma_mu =/= 2r*P_minus
-        # Let's compute directly: r*I - gamma_mu applied to U_psi_fwd
-        # But actually the standard form uses:
-        # -1/2 * (r - gamma_mu) = -1/2 * (r*I - gamma_mu)
-        # For efficiency, note that (r - gamma_mu) operating on a spinor:
-        # result_s = r * input_s - sum_s' gamma_mu[s,s'] * input_s'
-        # Using projector: (I - gamma_mu) = 2*P_minus, so gamma_mu = I - 2*P_minus
-        # Thus r - gamma_mu = r*I - I + 2*P_minus = (r-1)*I + 2*P_minus
-        # For r=1: r - gamma_mu = 2*P_minus
-
         # Forward term: -1/2 * (r - gamma_mu) * U_mu(x) * psi(x+mu)
-        # gamma_mu * psi: [4,4] @ [V, 4, 3] via einsum
         gamma_mu = _get_gamma_mu(mu, dtype, device)
         r_minus_gamma = r * torch.eye(4, dtype=dtype, device=device) - gamma_mu
 

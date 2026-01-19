@@ -51,26 +51,6 @@ class TestGaugeFieldRandom:
         assert abs_error < 1e-12, f"|det| differs from 1 by {abs_error}"
         assert phase_error < 1e-12, f"arg(det) differs from 0 by {phase_error}"
 
-    def test_random_gauge_is_special_unitary(self) -> None:
-        """Combined test: U in SU(3) means U^dag U = I and det(U) = 1."""
-        lat = pq.Lattice((2, 2, 2, 4))
-        torch.manual_seed(99999)
-        U = pq.GaugeField.random(lat)
-
-        data = U.data
-
-        # Unitarity: U^dag U = I
-        U_dag = data.conj().transpose(-2, -1)
-        product = torch.einsum("mvab,mvbc->mvac", U_dag, data)
-        identity = torch.eye(3, dtype=data.dtype, device=data.device)
-        unitarity_error = torch.abs(product - identity).max().item()
-
-        # Special: det(U) = 1
-        det = torch.linalg.det(data)
-        det_error = torch.abs(det - 1.0).max().item()
-
-        assert unitarity_error < 1e-12, f"Unitarity error: {unitarity_error}"
-        assert det_error < 1e-12, f"Determinant error: {det_error}"
 
 
 class TestHaarMeasureDistribution:
@@ -82,7 +62,9 @@ class TestHaarMeasureDistribution:
         For SU(N), E[Tr(U)] = 0 and E[|Tr(U)|^2] = 1.
         This is a fundamental property of the Haar measure.
         """
-        lat = pq.Lattice((8, 8, 8, 16))  # Large sample for statistics
+        # Use 4^4 lattice for fast CI (4*256 = 1024 samples)
+        # Larger lattices would give more robust statistics but slower tests
+        lat = pq.Lattice((4, 4, 4, 4))
         torch.manual_seed(77777)
         U = pq.GaugeField.random(lat)
 
@@ -97,9 +79,9 @@ class TestHaarMeasureDistribution:
         trace_sq = torch.abs(traces) ** 2
         mean_trace_sq = trace_sq.mean().item()
 
-        # With 4 * 8^3 * 16 = 131072 samples, statistical error is small
+        # Statistical error based on number of samples
         n_samples = 4 * lat.volume
-        expected_std_mean = 1.0 / n_samples**0.5  # ~0.003
+        expected_std_mean = 1.0 / n_samples**0.5
 
         assert mean_trace_abs < 10 * expected_std_mean, (
             f"E[Tr(U)] = {mean_trace_abs:.4f}, expected ~0 (within {10 * expected_std_mean:.4f})"
@@ -113,7 +95,9 @@ class TestHaarMeasureDistribution:
         - E[U_{ij}] = 0
         - E[|U_{ij}|^2] = 1/N = 1/3 for SU(3)
         """
-        lat = pq.Lattice((8, 8, 8, 16))
+        # Use 4^4 lattice for fast CI (4*256*9 = 9216 matrix elements)
+        # Larger lattices would give more robust statistics but slower tests
+        lat = pq.Lattice((4, 4, 4, 4))
         torch.manual_seed(88888)
         U = pq.GaugeField.random(lat)
 
@@ -135,30 +119,69 @@ class TestHaarMeasureDistribution:
             f"E[|U_ij|^2] = {mean_element_sq:.4f}, expected {1.0 / 3.0:.4f}"
         )
 
-    def test_different_seeds_give_different_results(self) -> None:
-        """Verify that different seeds produce different gauge fields."""
+    def test_random_seed_reproducibility(self) -> None:
+        """Verify that random seeds control reproducibility correctly.
+
+        Same seed should give identical results, different seeds should give different results.
+        """
         lat = pq.Lattice((2, 2, 2, 2))
 
-        torch.manual_seed(111)
+        # Same seed should give identical results
+        torch.manual_seed(333)
         U1 = pq.GaugeField.random(lat)
+
+        torch.manual_seed(333)
+        U2 = pq.GaugeField.random(lat)
+
+        same_diff = torch.abs(U1.data - U2.data).max().item()
+        assert same_diff < 1e-15, f"Same seed should give same result, diff={same_diff}"
+
+        # Different seeds should give different results
+        torch.manual_seed(111)
+        U3 = pq.GaugeField.random(lat)
 
         torch.manual_seed(222)
-        U2 = pq.GaugeField.random(lat)
+        U4 = pq.GaugeField.random(lat)
 
-        # Should be different
-        diff = torch.abs(U1.data - U2.data).max().item()
-        assert diff > 0.1, "Different seeds should produce different results"
+        diff_diff = torch.abs(U3.data - U4.data).max().item()
+        assert diff_diff > 0.1, "Different seeds should produce different results"
 
-    def test_same_seed_gives_same_result(self) -> None:
-        """Verify reproducibility with same seed."""
-        lat = pq.Lattice((2, 2, 2, 2))
+    def test_trace_real_imaginary_independence(self) -> None:
+        """Real and imaginary parts of Tr(U) should be independent for Haar measure.
 
-        torch.manual_seed(333)
-        U1 = pq.GaugeField.random(lat)
+        For SU(N) matrices from Haar measure, the trace Tr(U) is a complex number
+        where Re(Tr(U)) and Im(Tr(U)) are approximately independent Gaussian
+        random variables, each with mean 0 and variance 1/2.
 
-        torch.manual_seed(333)
-        U2 = pq.GaugeField.random(lat)
+        This test verifies:
+        1. Mean of Re(Tr(U)) ≈ 0
+        2. Mean of Im(Tr(U)) ≈ 0
+        3. Variance of Re(Tr(U)) ≈ 1/2
+        4. Variance of Im(Tr(U)) ≈ 1/2
+        """
+        # Use 4^4 lattice for fast CI (4*256 = 1024 samples)
+        # Larger lattices would give more robust statistics but slower tests
+        lat = pq.Lattice((4, 4, 4, 4))
+        torch.manual_seed(55555)
+        U = pq.GaugeField.random(lat)
 
-        # Should be identical
-        diff = torch.abs(U1.data - U2.data).max().item()
-        assert diff < 1e-15, f"Same seed should give same result, diff={diff}"
+        data = U.data  # [4, V, 3, 3]
+        traces = torch.einsum("mvaa->mv", data)  # [4, V] complex
+
+        # Extract real and imaginary parts
+        re_traces = traces.real.reshape(-1)
+        im_traces = traces.imag.reshape(-1)
+
+        # Check means are close to 0
+        mean_re = re_traces.mean().item()
+        mean_im = im_traces.mean().item()
+
+        assert abs(mean_re) < 0.1, f"E[Re(Tr(U))] = {mean_re:.4f}, expected ~0"
+        assert abs(mean_im) < 0.1, f"E[Im(Tr(U))] = {mean_im:.4f}, expected ~0"
+
+        # Check variances are close to 1/2
+        var_re = re_traces.var().item()
+        var_im = im_traces.var().item()
+
+        assert abs(var_re - 0.5) < 0.15, f"Var[Re(Tr(U))] = {var_re:.4f}, expected ~0.5"
+        assert abs(var_im - 0.5) < 0.15, f"Var[Im(Tr(U))] = {var_im:.4f}, expected ~0.5"

@@ -29,6 +29,7 @@ from plaq.fields import GaugeField, SpinorField
 from plaq.lattice import BoundaryCondition, Lattice
 from plaq.layouts import LayoutType, pack_eo, unpack_eo
 from plaq.operators import WilsonParams, apply_M, apply_Mdag, apply_MdagM
+from plaq.solvers import SolverInfo, bicgstab, cg, solve
 
 __all__ = [
     "BoundaryCondition",
@@ -41,6 +42,7 @@ __all__ = [
     "P_minus",
     "P_plus",
     "PlaqConfig",
+    "SolverInfo",
     "SpinorField",
     # Wilson operator
     "WilsonParams",
@@ -49,10 +51,14 @@ __all__ = [
     "apply_M",
     "apply_Mdag",
     "apply_MdagM",
+    # Solvers
+    "bicgstab",
+    "cg",
     "config",
     # Gamma matrices
     "gamma",
     "gamma5",
     "pack_eo",
+    "solve",
     "unpack_eo",
 ]

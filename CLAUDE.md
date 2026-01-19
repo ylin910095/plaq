@@ -53,6 +53,24 @@ Two storage layouts with automatic conversion:
 
 Use `pack_eo` / `unpack_eo` for conversions.
 
+### Solvers (`solvers/`)
+
+Iterative Krylov solvers for lattice QCD linear systems:
+
+- **CG** (`cg.py`): Conjugate Gradient for Hermitian positive-definite systems (MdagM)
+- **BiCGStab** (`bicgstab.py`): Bi-Conjugate Gradient Stabilized for general systems (M)
+- **solve** (`api.py`): High-level API with auto-selection of solver and equation type
+
+```python
+# Example usage
+x, info = pq.solve(U, b, equation="MdagM")  # Uses CG
+x, info = pq.solve(U, b, equation="M")      # Uses BiCGStab
+```
+
+### Preconditioning (`precond/`)
+
+- **Even-odd** (`even_odd.py`): Schur complement preconditioning for MdagM equation
+
 ### Global Configuration (`config.py`)
 
 `plaq.config` singleton controls dtype (default: `torch.complex128`) and device (default: `cpu`).

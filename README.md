@@ -8,7 +8,7 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 
 - High-precision computations with `torch.complex128` by default
 - Built on PyTorch for GPU acceleration (CPU-only for now)
-- Type-checked with Pyre
+- Type-checked with Pyrefly
 - Comprehensive documentation with LaTeX equation support
 
 ## Installation
@@ -87,7 +87,7 @@ uv run ruff check --fix
 ### Type Checking
 
 ```bash
-uv run pyre check
+uv run pyrefly check
 ```
 
 ### Building Documentation
@@ -149,8 +149,7 @@ plaq/
 │   ├── test_layouts.py         # Layout packing tests
 │   ├── test_wilson.py          # Wilson operator tests
 │   └── test_placeholder.py     # Basic tests
-├── .pyre_configuration         # Pyre type checker config
-├── pyproject.toml              # Project configuration
+├── pyproject.toml              # Project configuration (includes Pyrefly config)
 └── README.md                   # This file
 ```
 

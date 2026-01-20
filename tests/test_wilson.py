@@ -15,6 +15,7 @@ def test_wilson_gamma5_hermiticity_free_field() -> None:
     For the Wilson operator, M^dag = gamma5 M gamma5, which implies:
     <phi, M psi> = <M^dag phi, psi> = <gamma5 M gamma5 phi, psi>
     """
+    torch.manual_seed(42)
     lat = pq.Lattice((4, 4, 4, 4))
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
@@ -54,6 +55,7 @@ def test_apply_Mdag_matches_adjoint_free_field() -> None:
 
     This verifies that apply_Mdag correctly computes the adjoint.
     """
+    torch.manual_seed(43)
     lat = pq.Lattice((4, 4, 4, 4))
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
@@ -80,6 +82,7 @@ def test_apply_Mdag_matches_adjoint_free_field() -> None:
 
 def test_apply_MdagM_hermitian() -> None:
     """Test that MdagM is Hermitian: <phi, MdagM psi> = <MdagM phi, psi>."""
+    torch.manual_seed(44)
     lat = pq.Lattice((4, 4, 4, 4))
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
@@ -106,6 +109,7 @@ def test_apply_MdagM_hermitian() -> None:
 
 def test_apply_M_layout_equivalence() -> None:
     """Test that apply_M gives same result regardless of input layout."""
+    torch.manual_seed(45)
     lat = pq.Lattice((4, 4, 4, 4))
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
@@ -127,6 +131,142 @@ def test_apply_M_layout_equivalence() -> None:
     diff = torch.abs(result_from_site.site - result_from_eo.site).max().item()
     tol = 1e-14
     assert diff < tol, f"Layout equivalence failed: max diff = {diff}"
+
+
+def test_wilson_gamma5_hermiticity_random_gauge() -> None:
+    """Test gamma5-hermiticity with random gauge field.
+
+    For the Wilson operator, M^dag = gamma5 M gamma5, which implies:
+    <phi, M psi> = <M^dag phi, psi> = <gamma5 M gamma5 phi, psi>
+
+    This test verifies the property holds even for non-trivial gauge configurations.
+    """
+    torch.manual_seed(100)
+    lat = pq.Lattice((4, 4, 4, 4))
+    bc = pq.BoundaryCondition()
+    lat.build_neighbor_tables(bc)
+
+    # Random gauge field
+    U = pq.GaugeField.random(lat)
+
+    # Random spinors
+    psi = pq.SpinorField.random(lat)
+    phi = pq.SpinorField.random(lat)
+
+    params = pq.WilsonParams(mass=0.1)
+
+    # Compute <phi, M psi>
+    M_psi = pq.apply_M(U, psi, params, bc)
+    lhs = torch.vdot(phi.site.flatten(), M_psi.site.flatten())
+
+    # Compute <gamma5 M gamma5 phi, psi>
+    gamma5 = get_gamma5(dtype=phi.dtype, device=phi.device)
+    phi_site = phi.site
+    g5_phi = torch.einsum("ab,vbc->vac", gamma5, phi_site)
+    g5_phi_field = pq.SpinorField(g5_phi, lat)
+
+    M_g5_phi = pq.apply_M(U, g5_phi_field, params, bc)
+    g5_M_g5_phi = torch.einsum("ab,vbc->vac", gamma5, M_g5_phi.site)
+
+    rhs = torch.vdot(g5_M_g5_phi.flatten(), psi.site.flatten())
+
+    # Should be equal
+    diff = torch.abs(lhs - rhs).item()
+    tol = 1e-12
+    assert diff < tol, f"Gamma5-hermiticity failed with random gauge: |lhs - rhs| = {diff}"
+
+
+def test_apply_Mdag_matches_adjoint_random_gauge() -> None:
+    """Test that vdot(phi, M psi) = vdot(Mdag phi, psi) with random gauge field.
+
+    This verifies that apply_Mdag correctly computes the adjoint even for
+    non-trivial gauge configurations.
+    """
+    torch.manual_seed(101)
+    lat = pq.Lattice((4, 4, 4, 4))
+    bc = pq.BoundaryCondition()
+    lat.build_neighbor_tables(bc)
+
+    # Random gauge field
+    U = pq.GaugeField.random(lat)
+
+    psi = pq.SpinorField.random(lat)
+    phi = pq.SpinorField.random(lat)
+
+    params = pq.WilsonParams(mass=0.1)
+
+    # <phi, M psi>
+    M_psi = pq.apply_M(U, psi, params, bc)
+    lhs = torch.vdot(phi.site.flatten(), M_psi.site.flatten())
+
+    # <Mdag phi, psi>
+    Mdag_phi = pq.apply_Mdag(U, phi, params, bc)
+    rhs = torch.vdot(Mdag_phi.site.flatten(), psi.site.flatten())
+
+    diff = torch.abs(lhs - rhs).item()
+    tol = 1e-11  # Slightly relaxed to account for floating-point accumulation
+    assert diff < tol, f"Mdag adjoint test failed with random gauge: |lhs - rhs| = {diff}"
+
+
+def test_apply_MdagM_hermitian_random_gauge() -> None:
+    """Test that MdagM is Hermitian with random gauge field.
+
+    Verifies <phi, MdagM psi> = <MdagM phi, psi> for non-trivial gauge configurations.
+    """
+    torch.manual_seed(102)
+    lat = pq.Lattice((4, 4, 4, 4))
+    bc = pq.BoundaryCondition()
+    lat.build_neighbor_tables(bc)
+
+    # Random gauge field
+    U = pq.GaugeField.random(lat)
+
+    psi = pq.SpinorField.random(lat)
+    phi = pq.SpinorField.random(lat)
+
+    params = pq.WilsonParams(mass=0.1)
+
+    # <phi, MdagM psi>
+    MdagM_psi = pq.apply_MdagM(U, psi, params, bc)
+    lhs = torch.vdot(phi.site.flatten(), MdagM_psi.site.flatten())
+
+    # <MdagM phi, psi>
+    MdagM_phi = pq.apply_MdagM(U, phi, params, bc)
+    rhs = torch.vdot(MdagM_phi.site.flatten(), psi.site.flatten())
+
+    diff = torch.abs(lhs - rhs).item()
+    tol = 1e-11  # Slightly relaxed for MdagM (two operator applications)
+    assert diff < tol, f"MdagM hermiticity failed with random gauge: |lhs - rhs| = {diff}"
+
+
+def test_apply_M_layout_equivalence_random_gauge() -> None:
+    """Test that apply_M gives same result regardless of input layout with random gauge.
+
+    This verifies layout equivalence holds for non-trivial gauge configurations.
+    """
+    torch.manual_seed(103)
+    lat = pq.Lattice((4, 4, 4, 4))
+    bc = pq.BoundaryCondition()
+    lat.build_neighbor_tables(bc)
+
+    # Random gauge field
+    U = pq.GaugeField.random(lat)
+    params = pq.WilsonParams(mass=0.1)
+
+    # Create spinor in site layout
+    psi_site = pq.SpinorField.random(lat, layout="site")
+
+    # Convert to eo layout
+    psi_eo = psi_site.as_layout("eo")
+
+    # Apply M to both
+    result_from_site = pq.apply_M(U, psi_site, params, bc)
+    result_from_eo = pq.apply_M(U, psi_eo, params, bc)
+
+    # Compare in site layout
+    diff = torch.abs(result_from_site.site - result_from_eo.site).max().item()
+    tol = 1e-14
+    assert diff < tol, f"Layout equivalence failed with random gauge: max diff = {diff}"
 
 
 def test_wilson_free_field_eigenvalue() -> None:

@@ -19,7 +19,7 @@ class TestReferenceSolveM:
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)  # Periodic for simplicity
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.1)
 
         # Random source
@@ -131,7 +131,7 @@ class TestReferenceSolveMdagM:
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.1)
 
         torch.manual_seed(123)
@@ -227,7 +227,7 @@ class TestSolverResidualMonotonicity:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.5)  # Larger mass for faster convergence
 
         torch.manual_seed(456)
@@ -277,7 +277,7 @@ class TestEvenOddConsistency:
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.2)
 
         torch.manual_seed(789)
@@ -309,7 +309,7 @@ class TestEvenOddConsistency:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.1)
 
         torch.manual_seed(101)
@@ -354,7 +354,7 @@ class TestSolverDtype:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         b = pq.SpinorField.random(lat)
 
         # Default dtype (complex128)
@@ -375,7 +375,7 @@ class TestSolverCallbacks:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.5)
         b = pq.SpinorField.random(lat)
 
@@ -417,7 +417,7 @@ class TestSolverCallbacks:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.5)
         torch.manual_seed(123)
         b = pq.SpinorField.random(lat)
@@ -450,7 +450,7 @@ class TestSolverCallbacks:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         params = pq.WilsonParams(mass=0.2)
         torch.manual_seed(789)
         b = pq.SpinorField.random(lat)
@@ -486,7 +486,7 @@ class TestSolverCallbacks:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         b = pq.SpinorField.random(lat)
 
         # Solve without callback (should not error)
@@ -504,7 +504,7 @@ class TestSolverAPI:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         b = pq.SpinorField.random(lat)
 
         # Auto should select MdagM and CG
@@ -518,7 +518,7 @@ class TestSolverAPI:
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
-        U = pq.GaugeField.identity(lat)
+        U = pq.GaugeField.eye(lat)
         b = pq.SpinorField.random(lat)
 
         _, info = pq.solve(U, b, tol=1e-8)

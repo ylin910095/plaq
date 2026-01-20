@@ -12,7 +12,7 @@ Example
 >>> lat = pq.Lattice((4, 4, 4, 8))
 >>> bc = pq.BoundaryCondition()
 >>> lat.build_neighbor_tables(bc)
->>> U = pq.GaugeField.identity(lat)
+>>> U = pq.GaugeField.eye(lat)
 >>> b = pq.SpinorField.random(lat)
 >>> x, info = pq.solve(U, b)
 >>> print(f"Converged: {info.converged}, iters: {info.iters}")

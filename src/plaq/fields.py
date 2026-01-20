@@ -23,7 +23,7 @@ Example
 >>> print(psi_eo.eo.shape)  # [2, 256, 4, 3]
 >>>
 >>> # Create identity gauge field
->>> U = pq.GaugeField.identity(lat)
+>>> U = pq.GaugeField.eye(lat)
 >>> print(U.data.shape)  # [4, 512, 3, 3]
 
 """
@@ -318,7 +318,7 @@ class GaugeField:
     Example
     -------
     >>> lat = Lattice((4, 4, 4, 8))
-    >>> U = GaugeField.identity(lat)
+    >>> U = GaugeField.eye(lat)
     >>> print(U.data.shape)  # [4, 512, 3, 3]
 
     """
@@ -380,7 +380,7 @@ class GaugeField:
         return self._data[mu]
 
     @classmethod
-    def identity(
+    def eye(
         cls,
         lattice: Lattice,
         dtype: Any = None,

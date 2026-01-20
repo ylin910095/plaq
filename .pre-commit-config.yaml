@@ -1,8 +1,7 @@
 # Pre-commit configuration for plaq
 # See https://pre-commit.com for more information
 #
-# Default hooks run on every commit (fast, < 10s)
-# Manual hooks (pyrefly/tests/docs) run with: uv run pre-commit run --all-files --hook-stage manual
+# Default hooks run on every commit including type checking with pyrefly
 
 default_install_hook_types: [pre-commit]
 fail_fast: false
@@ -45,9 +44,6 @@ repos:
         types: [python]
         pass_filenames: true
 
-  # Optional/manual hooks - run with: uv run pre-commit run --all-files --hook-stage manual
-  - repo: local
-    hooks:
       # Pyrefly type checking
       - id: pyrefly
         name: pyrefly check
@@ -55,21 +51,3 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        stages: [manual]
-
-      # Pytest (fast subset)
-      - id: pytest
-        name: pytest -q
-        entry: uv run pytest -q
-        language: system
-        types: [python]
-        pass_filenames: false
-        stages: [manual]
-
-      # Sphinx docs build
-      - id: docs-build
-        name: sphinx docs build
-        entry: uv run sphinx-build -b html docs docs/_build -q
-        language: system
-        pass_filenames: false
-        stages: [manual]

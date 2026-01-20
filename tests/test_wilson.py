@@ -198,7 +198,7 @@ def test_gauge_field_identity() -> None:
     eye = torch.eye(3, dtype=U.dtype, device=U.device)
 
     for mu in range(4):
-        for site in range(min(10, lat.volume)):  # Check first 10 sites
+        for site in range(lat.volume):
             diff = torch.abs(U[mu][site] - eye).max().item()
             assert diff < 1e-15, f"Identity gauge not correct at mu={mu}, site={site}"
 

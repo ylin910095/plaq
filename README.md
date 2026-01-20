@@ -8,6 +8,8 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 
 - High-precision computations with `torch.complex128` by default
 - Built on PyTorch for GPU acceleration (CPU-only for now)
+- Iterative Krylov solvers (CG, BiCGStab) for lattice QCD linear systems
+- Even-odd preconditioning for improved solver performance
 - Type-checked with Pyrefly
 - Comprehensive documentation with LaTeX equation support
 
@@ -50,6 +52,11 @@ psi = pq.SpinorField.random(lat)  # Random spinor field
 # Apply Wilson Dirac operator
 params = pq.WilsonParams(mass=0.1)
 result = pq.apply_M(U, psi, params, bc)
+
+# Solve linear systems with iterative solvers
+b = pq.SpinorField.random(lat)
+x, info = pq.solve(U, b, equation="MdagM", mass=0.1, boundary_condition=bc)
+print(f"Solver converged: {info['converged']}, iterations: {info['iterations']}")
 
 # Access gamma matrices
 print(pq.gamma[0])  # gamma_0
@@ -142,12 +149,16 @@ plaq/
 │       ├── fields.py           # SpinorField, GaugeField
 │       ├── conventions/        # Gamma matrices (MILC)
 │       ├── operators/          # Wilson Dirac operator
+│       ├── solvers/            # Iterative solvers (CG, BiCGStab)
+│       ├── precond/            # Preconditioning (even-odd)
 │       ├── py.typed            # PEP 561 type marker
 │       └── utils/              # Utility functions
 ├── tests/
 │   ├── test_gamma.py           # Gamma matrix tests
 │   ├── test_layouts.py         # Layout packing tests
+│   ├── test_fields.py          # Field tests
 │   ├── test_wilson.py          # Wilson operator tests
+│   ├── test_solvers.py         # Solver tests (CG, BiCGStab)
 │   └── test_placeholder.py     # Basic tests
 ├── pyproject.toml              # Project configuration (includes Pyrefly config)
 └── README.md                   # This file

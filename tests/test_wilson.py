@@ -20,7 +20,7 @@ def test_wilson_gamma5_hermiticity_free_field() -> None:
     lat.build_neighbor_tables(bc)
 
     # Identity gauge field (free field)
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
 
     # Random spinors
     psi = pq.SpinorField.random(lat)
@@ -58,7 +58,7 @@ def test_apply_Mdag_matches_adjoint_free_field() -> None:
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
 
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
 
     psi = pq.SpinorField.random(lat)
     phi = pq.SpinorField.random(lat)
@@ -84,7 +84,7 @@ def test_apply_MdagM_hermitian() -> None:
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
 
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
 
     psi = pq.SpinorField.random(lat)
     phi = pq.SpinorField.random(lat)
@@ -110,7 +110,7 @@ def test_apply_M_layout_equivalence() -> None:
     bc = pq.BoundaryCondition()
     lat.build_neighbor_tables(bc)
 
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
     params = pq.WilsonParams(mass=0.1)
 
     # Create spinor in site layout
@@ -139,7 +139,7 @@ def test_wilson_free_field_eigenvalue() -> None:
     bc = pq.BoundaryCondition(fermion_bc_time=1.0)  # Periodic BC for simplicity
     lat.build_neighbor_tables(bc)
 
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
 
     # Create a constant spinor
     psi_site = torch.zeros(lat.volume, 4, 3, dtype=torch.complex128)
@@ -172,7 +172,7 @@ def test_wilson_boundary_conditions() -> None:
     torch.manual_seed(42)
     psi = pq.SpinorField.random(lat)
 
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
     params = pq.WilsonParams(mass=0.1)
 
     # Apply with antiperiodic BC
@@ -193,7 +193,7 @@ def test_wilson_boundary_conditions() -> None:
 def test_gauge_field_identity() -> None:
     """Test that identity gauge field is correct."""
     lat = pq.Lattice((4, 4, 4, 4))
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
 
     eye = torch.eye(3, dtype=U.dtype, device=U.device)
 

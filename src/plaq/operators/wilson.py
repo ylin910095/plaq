@@ -45,7 +45,7 @@ Example
 >>> lat = pq.Lattice((4, 4, 4, 8))
 >>> bc = pq.BoundaryCondition()
 >>> lat.build_neighbor_tables(bc)
->>> U = pq.GaugeField.identity(lat)
+>>> U = pq.GaugeField.eye(lat)
 >>> psi = pq.SpinorField.random(lat)
 >>> params = pq.WilsonParams(mass=0.1)
 >>> result = pq.apply_M(U, psi, params, bc)

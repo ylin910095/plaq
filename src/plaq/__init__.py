@@ -11,7 +11,7 @@ The package can be imported as ``pq`` for convenience:
     lat = pq.Lattice((4, 4, 4, 8))
 
     # Create fields
-    U = pq.GaugeField.identity(lat)
+    U = pq.GaugeField.eye(lat)
     psi = pq.SpinorField.random(lat)
 
     # Apply Wilson operator

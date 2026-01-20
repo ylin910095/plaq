@@ -455,12 +455,6 @@ class GaugeField:
         .. [1] Mezzadri, F. (2007). "How to generate random matrices from the
                classical compact groups." Notices of the AMS 54.5: 592-604.
                https://arxiv.org/abs/math-ph/0609050
-        .. [2] Stewart, G. W. (1980). "The efficient generation of random
-               orthogonal matrices with an application to condition estimators."
-               SIAM Journal on Numerical Analysis 17.3: 403-409.
-        .. [3] Diaconis, P. & Shahshahani, M. (1987). "The subgroup algorithm
-               for generating uniform random variables." Probability in the
-               Engineering and Informational Sciences 1.1: 15-32.
 
         """
         if dtype is None:

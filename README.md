@@ -47,6 +47,8 @@ lat.build_neighbor_tables(bc)
 
 # Create fields
 U = pq.GaugeField.identity(lat)  # Identity gauge field (free field)
+# or
+# U = pq.GaugeField.random(lat)  # Haar random SU(3) field
 psi = pq.SpinorField.random(lat)  # Random spinor field
 
 # Apply Wilson Dirac operator

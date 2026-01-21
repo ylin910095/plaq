@@ -15,7 +15,7 @@ class TestReferenceSolveM:
     def test_reference_solve_M_identity_gauge(self) -> None:
         """Test BiCGStab matches dense solve on 2^4 lattice with identity gauge."""
         # Small lattice for dense solve
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)  # Periodic for simplicity
         lat.build_neighbor_tables(bc)
 
@@ -68,7 +68,7 @@ class TestReferenceSolveM:
 
     def test_reference_solve_M_random_gauge(self) -> None:
         """Test BiCGStab matches dense solve on 2^4 lattice with random gauge."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
@@ -127,7 +127,7 @@ class TestReferenceSolveMdagM:
 
     def test_reference_solve_MdagM_identity_gauge(self) -> None:
         """Test CG matches dense solve on 2^4 lattice with identity gauge."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
@@ -172,7 +172,7 @@ class TestReferenceSolveMdagM:
 
     def test_reference_solve_MdagM_random_gauge(self) -> None:
         """Test CG matches dense solve on 2^4 lattice with random gauge."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
@@ -223,7 +223,7 @@ class TestSolverResidualMonotonicity:
 
     def test_cg_residual_decreases(self) -> None:
         """Test that CG residual decreases monotonically using callback."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -273,7 +273,7 @@ class TestEvenOddConsistency:
 
     def test_eo_preconditioned_matches_unpreconditioned(self) -> None:
         """EO-preconditioned solve should match unpreconditioned on tiny lattice."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition(fermion_bc_time=1.0)
         lat.build_neighbor_tables(bc)
 
@@ -305,7 +305,7 @@ class TestEvenOddConsistency:
         """Test that EO hopping terms are consistent with full operator."""
         from plaq.precond.even_odd import apply_hopping_eo, apply_hopping_oe
 
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -350,7 +350,7 @@ class TestSolverDtype:
 
     def test_solve_returns_correct_dtype(self) -> None:
         """Solve should return the specified dtype."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -371,7 +371,7 @@ class TestSolverCallbacks:
 
     def test_cg_callback_called(self) -> None:
         """Test that CG callback is called at each iteration."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -413,7 +413,7 @@ class TestSolverCallbacks:
 
     def test_bicgstab_callback_called(self) -> None:
         """Test that BiCGStab callback is called at each iteration."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -446,7 +446,7 @@ class TestSolverCallbacks:
 
     def test_callback_with_eo_preconditioning(self) -> None:
         """Test callback works with even-odd preconditioning."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -482,7 +482,7 @@ class TestSolverCallbacks:
 
     def test_callback_none_works(self) -> None:
         """Test that None callback works (no callback provided)."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -500,7 +500,7 @@ class TestSolverAPI:
 
     def test_auto_equation_selection(self) -> None:
         """Auto equation should select MdagM for Wilson."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 
@@ -514,7 +514,7 @@ class TestSolverAPI:
 
     def test_solver_info_fields(self) -> None:
         """SolverInfo should have all required fields."""
-        lat = pq.Lattice((4, 6, 8, 12))
+        lat = pq.Lattice((4, 6, 4, 6))
         bc = pq.BoundaryCondition()
         lat.build_neighbor_tables(bc)
 

@@ -46,7 +46,7 @@ bc = pq.BoundaryCondition()  # Antiperiodic in time, periodic in space
 lat.build_neighbor_tables(bc)
 
 # Create fields
-U = pq.GaugeField.identity(lat)  # Identity gauge field (free field)
+U = pq.GaugeField.eye(lat)  # Identity gauge field (free field)
 # or
 # U = pq.GaugeField.random(lat)  # Haar random SU(3) field
 psi = pq.SpinorField.random(lat)  # Random spinor field

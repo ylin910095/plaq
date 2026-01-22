@@ -1,41 +1,23 @@
-"""High-level solver API for lattice QCD linear systems.
+"""Native plaq backend implementation for solvers.
 
-This module provides the main :func:`solve` function that automatically
-selects the appropriate solver and equation type based on the action.
+This package provides the native plaq implementation of iterative solvers:
 
-The API supports:
+- :func:`cg`: Conjugate Gradient for Hermitian positive-definite systems
+- :func:`bicgstab`: BiCGStab for general non-Hermitian systems
+- :func:`plaq_solve`: High-level solver function for lattice QCD systems
 
-- **equation="M"**: Solve :math:`M x = b` directly using BiCGStab
-- **equation="MdagM"**: Solve :math:`M^\\dagger M x = M^\\dagger b` using CG
-
-For the Wilson action, the default is "MdagM" which gives a Hermitian
-positive-definite system suitable for CG.
-
-The actual solver implementation is provided through the backend abstraction
-layer (:mod:`plaq.backends`). The native plaq backend (:mod:`plaq.backends.plaq`)
-contains the implementation and is always available.
-
-Example
--------
->>> import plaq as pq
->>> lat = pq.Lattice((4, 4, 4, 8))
->>> bc = pq.BoundaryCondition()
->>> lat.build_neighbor_tables(bc)
->>> U = pq.GaugeField.eye(lat)
->>> b = pq.SpinorField.random(lat)
->>> params = pq.WilsonParams(mass=0.1)
->>> x, info = pq.solve(U, b, params=params, bc=bc)
->>> print(f"Converged: {info.converged}, iters: {info.iters}")
+The plaq backend is automatically registered with the backend registry
+when this module is imported.
 
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
 
+from plaq.backends import Backend, registry
 from plaq.backends.plaq.bicgstab import bicgstab
 from plaq.backends.plaq.cg import cg
 from plaq.fields import GaugeField, SpinorField
@@ -46,35 +28,61 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from plaq.lattice import Lattice
+    from plaq.solvers.api import SolverInfo
 
 
-@dataclass
-class SolverInfo:
-    """Information about solver convergence.
+def _solve_preconditioned_eo(
+    U: GaugeField,
+    b_data: torch.Tensor,
+    lattice: Lattice,
+    params: WilsonParams,
+    bc: BoundaryCondition,
+    equation: str,
+    _method: str,
+    tol: float,
+    maxiter: int,
+    dtype: torch.dtype,
+    callback: Callable[[SpinorField], None] | None = None,
+) -> tuple[SpinorField, SolverInfo]:
+    """Solve with even-odd preconditioning.
 
-    Attributes
-    ----------
-    converged : bool
-        Whether the solver converged within tolerance.
-    iters : int
-        Number of iterations performed.
-    final_residual : float
-        Final relative residual norm.
-    method : str
-        Solver method used ("cg" or "bicgstab").
-    equation : str
-        Equation type solved ("M" or "MdagM").
+    This function implements Schur complement preconditioning for MdagM.
 
     """
+    from plaq.precond.even_odd import solve_eo_preconditioned
+    from plaq.solvers.api import SolverInfo
 
-    converged: bool
-    iters: int
-    final_residual: float
-    method: str
-    equation: str
+    if equation != "MdagM":
+        msg = "Even-odd preconditioning is only supported for equation='MdagM'."
+        raise ValueError(msg)
+
+    # Wrap callback if provided (for EO solver which works with site layout)
+    tensor_callback = None
+    if callback is not None:
+        callback_fn = callback  # Capture in local scope for type checker
+
+        def tensor_callback(x_data: torch.Tensor) -> None:
+            x_field = SpinorField(x_data, lattice, layout="site")
+            callback_fn(x_field)
+
+    # Delegate to EO solver
+    x_data, solver_info = solve_eo_preconditioned(
+        U, b_data, lattice, params, bc, tol, maxiter, dtype, tensor_callback
+    )
+
+    x = SpinorField(x_data, lattice, layout="site")
+    info = SolverInfo(
+        converged=solver_info.converged,
+        iters=solver_info.iters,
+        final_residual=solver_info.final_residual,
+        method="cg",
+        equation="MdagM",
+    )
+
+    return x, info
 
 
-def solve(
+def plaq_solve(
     U: GaugeField,
     b: SpinorField,
     action: str = "wilson",
@@ -88,9 +96,9 @@ def solve(
     bc: BoundaryCondition | None = None,
     callback: Callable[[SpinorField], None] | None = None,
 ) -> tuple[SpinorField, SolverInfo]:
-    """Solve a lattice QCD linear system.
+    """Solve a lattice QCD linear system using the native plaq backend.
 
-    High-level API for solving linear systems involving the Dirac operator.
+    This is the native plaq backend implementation of the solver API.
 
     For **equation="M"** (direct solve):
 
@@ -148,18 +156,9 @@ def solve(
     ValueError
         If an unsupported action, method, equation, or preconditioner is specified.
 
-    Example
-    -------
-    >>> import plaq as pq
-    >>> lat = pq.Lattice((4, 4, 4, 8))
-    >>> bc = pq.BoundaryCondition()
-    >>> lat.build_neighbor_tables(bc)
-    >>> U = pq.GaugeField.eye(lat)
-    >>> b = pq.SpinorField.random(lat)
-    >>> x, info = pq.solve(U, b)
-    >>> print(f"Converged: {info.converged}")
-
     """
+    from plaq.solvers.api import SolverInfo
+
     if action != "wilson":
         msg = f"Unsupported action: {action}. Only 'wilson' is supported."
         raise ValueError(msg)
@@ -266,51 +265,5 @@ def solve(
     return x, info
 
 
-def _solve_preconditioned_eo(
-    U: GaugeField,
-    b_data: torch.Tensor,
-    lattice: Lattice,
-    params: WilsonParams,
-    bc: BoundaryCondition,
-    equation: str,
-    _method: str,
-    tol: float,
-    maxiter: int,
-    dtype: torch.dtype,
-    callback: Callable[[SpinorField], None] | None = None,
-) -> tuple[SpinorField, SolverInfo]:
-    """Solve with even-odd preconditioning.
-
-    This function implements Schur complement preconditioning for MdagM.
-
-    """
-    from plaq.precond.even_odd import solve_eo_preconditioned
-
-    if equation != "MdagM":
-        msg = "Even-odd preconditioning is only supported for equation='MdagM'."
-        raise ValueError(msg)
-
-    # Wrap callback if provided (for EO solver which works with site layout)
-    tensor_callback = None
-    if callback is not None:
-        callback_fn = callback  # Capture in local scope for type checker
-
-        def tensor_callback(x_data: torch.Tensor) -> None:
-            x_field = SpinorField(x_data, lattice, layout="site")
-            callback_fn(x_field)
-
-    # Delegate to EO solver
-    x_data, solver_info = solve_eo_preconditioned(
-        U, b_data, lattice, params, bc, tol, maxiter, dtype, tensor_callback
-    )
-
-    x = SpinorField(x_data, lattice, layout="site")
-    info = SolverInfo(
-        converged=solver_info.converged,
-        iters=solver_info.iters,
-        final_residual=solver_info.final_residual,
-        method="cg",
-        equation="MdagM",
-    )
-
-    return x, info
+# Register plaq backend on import
+registry.register(Backend.PLAQ, plaq_solve)

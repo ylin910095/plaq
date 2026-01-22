@@ -10,6 +10,7 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 - Built on PyTorch for GPU acceleration (CPU-only for now)
 - Iterative Krylov solvers (CG, BiCGStab) for lattice QCD linear systems
 - Even-odd preconditioning for improved solver performance
+- Backend abstraction layer for multiple solver implementations (PyTorch, QUDA)
 - Type-checked with Pyrefly
 - Comprehensive documentation with LaTeX equation support
 
@@ -145,17 +146,21 @@ plaq/
 │   └── plaq/
 │       ├── __init__.py         # Package entry point
 │       ├── _version.py         # Version info
+│       ├── backends/           # Backend abstraction layer
+│       │   ├── __init__.py     # Backend enum, registry, exceptions
+│       │   └── plaq/            # Native plaq backend (CG, BiCGStab)
 │       ├── config.py           # Global configuration
 │       ├── lattice.py          # Lattice and BoundaryCondition
 │       ├── layouts.py          # EO packing/unpacking
 │       ├── fields.py           # SpinorField, GaugeField
 │       ├── conventions/        # Gamma matrices (MILC)
 │       ├── operators/          # Wilson Dirac operator
-│       ├── solvers/            # Iterative solvers (CG, BiCGStab)
+│       ├── solvers/            # High-level solver API
 │       ├── precond/            # Preconditioning (even-odd)
 │       ├── py.typed            # PEP 561 type marker
 │       └── utils/              # Utility functions
 ├── tests/
+│   ├── test_backends.py        # Backend abstraction tests
 │   ├── test_gamma.py           # Gamma matrix tests
 │   ├── test_layouts.py         # Layout packing tests
 │   ├── test_fields.py          # Field tests

@@ -53,13 +53,33 @@ Two storage layouts with automatic conversion:
 
 Use `pack_eo` / `unpack_eo` for conversions.
 
+### Backends (`backends/`)
+
+Backend abstraction layer for dispatching solver calls to different implementations:
+
+- **Backend** (`__init__.py`): Enum with `PLAQ` and `QUDA` backends
+- **BackendRegistry** (`__init__.py`): Registry for available backend implementations
+- **plaq/** (`plaq/`): Native plaq backend package (always available)
+  - `cg.py`: Conjugate Gradient for Hermitian positive-definite systems (MdagM)
+  - `bicgstab.py`: BiCGStab for general non-Hermitian systems (M)
+  - `__init__.py`: High-level plaq solver and backend registration
+
+```python
+# Check backend availability
+from plaq.backends import Backend, registry
+registry.is_available(Backend.PLAQ)  # True
+registry.is_available(Backend.QUDA)  # False (requires separate installation)
+```
+
 ### Solvers (`solvers/`)
 
-Iterative Krylov solvers for lattice QCD linear systems:
+High-level solver API for lattice QCD linear systems:
 
-- **CG** (`cg.py`): Conjugate Gradient for Hermitian positive-definite systems (MdagM)
-- **BiCGStab** (`bicgstab.py`): Bi-Conjugate Gradient Stabilized for general systems (M)
 - **solve** (`api.py`): High-level API with auto-selection of solver and equation type
+- **SolverInfo** (`api.py`): Dataclass for solver convergence information
+
+The low-level Krylov solvers (`cg`, `bicgstab`) are implemented in `backends/plaq/`
+and re-exported from `solvers/` for convenience.
 
 ```python
 # Example usage

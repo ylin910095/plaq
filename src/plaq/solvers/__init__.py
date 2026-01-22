@@ -1,10 +1,16 @@
 """Solvers subpackage for plaq.
 
-This subpackage provides iterative Krylov solvers for lattice QCD linear systems:
+This subpackage provides the high-level solver API for lattice QCD linear systems:
+
+- :func:`solve`: High-level API that automatically selects solver and equation type
+- :class:`SolverInfo`: Dataclass containing solver convergence information
+
+The low-level Krylov solver implementations (CG, BiCGStab) are located in the
+backend modules (see :mod:`plaq.backends.plaq`). They are re-exported here
+for convenience:
 
 - :func:`cg`: Conjugate Gradient for Hermitian positive-definite systems (e.g., MdagM)
 - :func:`bicgstab`: BiCGStab for general non-Hermitian systems (e.g., M)
-- :func:`solve`: High-level API that automatically selects solver and equation type
 
 Example
 -------
@@ -19,9 +25,9 @@ Example
 
 """
 
+from plaq.backends.plaq.bicgstab import bicgstab
+from plaq.backends.plaq.cg import cg
 from plaq.solvers.api import SolverInfo, solve
-from plaq.solvers.bicgstab import bicgstab
-from plaq.solvers.cg import cg
 
 __all__ = [
     "SolverInfo",

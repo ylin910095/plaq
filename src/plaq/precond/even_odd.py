@@ -54,11 +54,11 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from plaq.backends.plaq.cg import CGInfo, cg
 from plaq.fields import GaugeField, SpinorField
 from plaq.lattice import BoundaryCondition
 from plaq.layouts import pack_eo, unpack_eo
 from plaq.operators import WilsonParams
-from plaq.solvers.cg import CGInfo, cg
 
 if TYPE_CHECKING:
     from plaq.lattice import Lattice

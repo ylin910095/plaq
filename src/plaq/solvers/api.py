@@ -64,6 +64,8 @@ class SolverInfo:
         Solver method used ("cg" or "bicgstab").
     equation : str
         Equation type solved ("M" or "MdagM").
+    backend : str
+        Backend used for the solve ("plaq" or "quda").
 
     """
 
@@ -72,6 +74,7 @@ class SolverInfo:
     final_residual: float
     method: str
     equation: str
+    backend: str
 
 
 def solve(
@@ -87,6 +90,7 @@ def solve(
     params: WilsonParams | None = None,
     bc: BoundaryCondition | None = None,
     callback: Callable[[SpinorField], None] | None = None,
+    backend: str = "auto",
 ) -> tuple[SpinorField, SolverInfo]:
     """Solve a lattice QCD linear system.
 
@@ -137,6 +141,9 @@ def solve(
     callback : Callable[[SpinorField], None], optional
         User-supplied function to call after each iteration.
         Called as callback(xk) where xk is the current solution spinor field.
+    backend : str
+        Backend to use: "auto", "plaq", or "quda".
+        If "auto", uses QUDA if available and tensors are on CUDA, otherwise plaq.
 
     Returns
     -------
@@ -147,6 +154,8 @@ def solve(
     ------
     ValueError
         If an unsupported action, method, equation, or preconditioner is specified.
+    BackendNotAvailableError
+        If the requested backend is not available.
 
     Example
     -------
@@ -157,12 +166,33 @@ def solve(
     >>> U = pq.GaugeField.eye(lat)
     >>> b = pq.SpinorField.random(lat)
     >>> x, info = pq.solve(U, b)
-    >>> print(f"Converged: {info.converged}")
+    >>> print(f"Converged: {info.converged}, backend: {info.backend}")
 
     """
+    # Import plaq backend to ensure it's registered
+    import plaq.backends.plaq  # noqa: F401
+    from plaq.backends import Backend, BackendNotAvailableError, registry
+
     if action != "wilson":
         msg = f"Unsupported action: {action}. Only 'wilson' is supported."
         raise ValueError(msg)
+
+    # Validate and select backend
+    if backend not in ("auto", "plaq", "quda"):
+        msg = f"Unsupported backend: {backend}. Use 'auto', 'plaq', or 'quda'."
+        raise ValueError(msg)
+
+    # Determine which backend to use
+    if backend == "auto":
+        # Use QUDA if available and tensors are on CUDA
+        is_cuda = b.site.is_cuda
+        backend_name = "quda" if is_cuda and registry.is_available(Backend.QUDA) else "plaq"
+    elif backend == "plaq":
+        backend_name = "plaq"
+    else:  # backend == "quda"
+        if not registry.is_available(Backend.QUDA):
+            raise BackendNotAvailableError(Backend.QUDA)
+        backend_name = "quda"
 
     # Set defaults
     if params is None:
@@ -207,7 +237,18 @@ def solve(
     # Handle preconditioning
     if precond == "eo":
         return _solve_preconditioned_eo(
-            U_work, b_data, lattice, params, bc, equation, method, tol, maxiter, dtype, callback
+            U_work,
+            b_data,
+            lattice,
+            params,
+            bc,
+            equation,
+            method,
+            tol,
+            maxiter,
+            dtype,
+            callback,
+            backend_name,
         )
     elif precond is not None:
         msg = f"Unsupported preconditioner: {precond}. Use 'eo' or None."
@@ -261,6 +302,7 @@ def solve(
         final_residual=solver_info.final_residual,
         method=method,
         equation=equation,
+        backend=backend_name,
     )
 
     return x, info
@@ -278,6 +320,7 @@ def _solve_preconditioned_eo(
     maxiter: int,
     dtype: torch.dtype,
     callback: Callable[[SpinorField], None] | None = None,
+    backend_name: str = "plaq",
 ) -> tuple[SpinorField, SolverInfo]:
     """Solve with even-odd preconditioning.
 
@@ -311,6 +354,7 @@ def _solve_preconditioned_eo(
         final_residual=solver_info.final_residual,
         method="cg",
         equation="MdagM",
+        backend=backend_name,
     )
 
     return x, info

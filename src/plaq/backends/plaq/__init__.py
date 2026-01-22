@@ -77,6 +77,7 @@ def _solve_preconditioned_eo(
         final_residual=solver_info.final_residual,
         method="cg",
         equation="MdagM",
+        backend="plaq",
     )
 
     return x, info
@@ -260,6 +261,7 @@ def plaq_solve(
         final_residual=solver_info.final_residual,
         method=method,
         equation=equation,
+        backend="plaq",
     )
 
     return x, info

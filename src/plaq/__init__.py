@@ -23,6 +23,7 @@ The package can be imported as ``pq`` for convenience:
 """
 
 from plaq._version import __version__
+from plaq.backends import BackendNotAvailableError
 from plaq.config import PlaqConfig, config
 from plaq.conventions import P_minus, P_plus, gamma, gamma5
 from plaq.fields import GaugeField, SpinorField
@@ -32,6 +33,8 @@ from plaq.operators import WilsonParams, apply_M, apply_Mdag, apply_MdagM
 from plaq.solvers import SolverInfo, bicgstab, cg, solve
 
 __all__ = [
+    # Backends
+    "BackendNotAvailableError",
     "BoundaryCondition",
     # Fields
     "GaugeField",

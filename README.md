@@ -16,6 +16,13 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 
 ## Installation
 
+This repository is organized as a **uv workspace** monorepo containing multiple packages:
+
+| Package | Description |
+|---------|-------------|
+| `plaq` (root) | Core lattice gauge theory toolkit |
+| `quda_torch_op` | PyTorch C++ extension for QUDA operators |
+
 ### Using uv (recommended)
 
 ```bash
@@ -23,14 +30,35 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 git clone https://github.com/YOUR_USERNAME/plaq.git
 cd plaq
 
-# Install with all development dependencies
+# Install plaq with all development dependencies
 uv sync --all-groups
+
+# Install plaq with QUDA backend support (builds C++ extension)
+uv sync --all-groups --extra quda
+
+# Or install all workspace packages
+uv sync --all-packages --all-groups
+```
+
+### Package-specific Installation
+
+```bash
+# Install only the quda_torch_op package
+uv sync --package quda_torch_op
+
+# Run tests for a specific package
+uv run --package quda_torch_op pytest
 ```
 
 ### Using pip
 
 ```bash
+# Install plaq only
 pip install -e .
+
+# Install with QUDA support (requires torch to be installed first)
+pip install torch
+pip install -e ./packages/quda_torch_op --no-build-isolation
 ```
 
 ## Quickstart
@@ -58,8 +86,8 @@ result = pq.apply_M(U, psi, params, bc)
 
 # Solve linear systems with iterative solvers
 b = pq.SpinorField.random(lat)
-x, info = pq.solve(U, b, equation="MdagM", mass=0.1, boundary_condition=bc)
-print(f"Solver converged: {info['converged']}, iterations: {info['iterations']}")
+x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc)
+print(f"Solver converged: {info.converged}, iterations: {info.iters}")
 
 # Access gamma matrices
 print(pq.gamma[0])  # gamma_0
@@ -75,7 +103,14 @@ print(psi_eo.eo.shape)  # [2, 256, 4, 3]
 ### Running Tests
 
 ```bash
+# Run all tests (root package)
 uv run pytest
+
+# Run tests for quda_torch_op package
+uv run --package quda_torch_op pytest
+
+# Run all tests including package tests
+uv run pytest tests/ packages/quda_torch_op/tests/
 ```
 
 ### Linting and Formatting
@@ -137,38 +172,48 @@ uv run pre-commit run --all-files --hook-stage manual
 plaq/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml              # GitHub Actions CI workflow
+│       └── ci.yml               # GitHub Actions CI workflow
 ├── docs/
-│   ├── api/                    # API documentation
-│   ├── conf.py                 # Sphinx configuration
-│   └── index.rst               # Documentation home
+│   ├── api/                     # API documentation
+│   ├── conf.py                  # Sphinx configuration
+│   └── index.rst                # Documentation home
+├── packages/
+│   └── quda_torch_op/           # QUDA PyTorch C++ extension
+│       ├── pyproject.toml       # Package configuration
+│       ├── setup.py             # C++ extension build script
+│       ├── csrc/                # C++ source files
+│       ├── quda_torch_op/       # Python package
+│       └── tests/               # Package-specific tests
 ├── src/
 │   └── plaq/
-│       ├── __init__.py         # Package entry point
-│       ├── _version.py         # Version info
-│       ├── backends/           # Backend abstraction layer
-│       │   ├── __init__.py     # Backend enum, registry, exceptions
-│       │   └── plaq/            # Native plaq backend (CG, BiCGStab)
-│       ├── config.py           # Global configuration
-│       ├── lattice.py          # Lattice and BoundaryCondition
-│       ├── layouts.py          # EO packing/unpacking
-│       ├── fields.py           # SpinorField, GaugeField
-│       ├── conventions/        # Gamma matrices (MILC)
-│       ├── operators/          # Wilson Dirac operator
-│       ├── solvers/            # High-level solver API
-│       ├── precond/            # Preconditioning (even-odd)
-│       ├── py.typed            # PEP 561 type marker
-│       └── utils/              # Utility functions
+│       ├── __init__.py          # Package entry point
+│       ├── _version.py          # Version info
+│       ├── backends/            # Backend abstraction layer
+│       │   ├── __init__.py      # Backend enum, registry, exceptions
+│       │   ├── plaq/            # Native plaq backend (CG, BiCGStab)
+│       │   └── quda/            # QUDA backend (requires quda_torch_op)
+│       ├── config.py            # Global configuration
+│       ├── lattice.py           # Lattice and BoundaryCondition
+│       ├── layouts.py           # EO packing/unpacking
+│       ├── fields.py            # SpinorField, GaugeField
+│       ├── conventions/         # Gamma matrices (MILC)
+│       ├── operators/           # Wilson Dirac operator
+│       ├── solvers/             # High-level solver API
+│       ├── precond/             # Preconditioning (even-odd)
+│       ├── py.typed             # PEP 561 type marker
+│       └── utils/               # Utility functions
 ├── tests/
-│   ├── test_backends.py        # Backend abstraction tests
-│   ├── test_gamma.py           # Gamma matrix tests
-│   ├── test_layouts.py         # Layout packing tests
-│   ├── test_fields.py          # Field tests
-│   ├── test_wilson.py          # Wilson operator tests
-│   ├── test_solvers.py         # Solver tests (CG, BiCGStab)
-│   └── test_placeholder.py     # Basic tests
-├── pyproject.toml              # Project configuration (includes Pyrefly config)
-└── README.md                   # This file
+│   ├── test_backends.py         # Backend abstraction tests
+│   ├── test_quda_backend.py     # QUDA backend integration tests
+│   ├── test_gamma.py            # Gamma matrix tests
+│   ├── test_layouts.py          # Layout packing tests
+│   ├── test_fields.py           # Field tests
+│   ├── test_wilson.py           # Wilson operator tests
+│   ├── test_solvers.py          # Solver tests (CG, BiCGStab)
+│   └── test_placeholder.py      # Basic tests
+├── pyproject.toml               # Workspace root configuration
+├── uv.lock                      # Workspace lockfile
+└── README.md                    # This file
 ```
 
 ## License

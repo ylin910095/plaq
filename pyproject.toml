@@ -25,6 +25,21 @@ dependencies = [
     "torch>=2.0.0",
 ]
 
+[project.optional-dependencies]
+# Install QUDA backend support (requires quda_torch_op C++ extension build)
+quda = ["quda_torch_op"]
+
+[tool.uv]
+# Provide torch as an extra build dependency for quda_torch_op C++ extension build
+extra-build-dependencies = { quda_torch_op = ["torch>=2.6.0"] }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+# Workspace dependency - quda_torch_op is resolved from packages/quda_torch_op
+quda_torch_op = { workspace = true }
+
 [dependency-groups]
 dev = [
     "ruff>=0.4.0",
@@ -83,9 +98,9 @@ python_functions = ["test_*"]
 addopts = "-v --tb=short"
 
 [tool.pyrefly]
-project-includes = ["src", "tests"]
+project-includes = ["src", "tests", "packages/quda_torch_op"]
 project-excludes = ["**/__pycache__", "**/*venv/**", "**/node_modules", "**/build", "**/dist"]
-search-path = ["src"]
+search-path = ["src", "packages/quda_torch_op"]
 python-platform = "linux"
 python-version = "3.11"
 untyped-def-behavior = "check-and-infer-return-type"
@@ -95,3 +110,5 @@ untyped-def-behavior = "check-and-infer-return-type"
 unsupported-operation = "ignore"
 # Suppress warnings about identity comparison
 unnecessary-comparison = "ignore"
+# C++ extensions like quda_torch_op._C cannot be found by type checker
+missing-import = "ignore"

@@ -18,12 +18,24 @@ class TestBackendRegistry:
         assert callable(solver_fn)
 
     def test_unavailable_backend_raises(self) -> None:
-        """Verify requesting unavailable backend raises BackendNotAvailableError."""
-        # QUDA is not available (not registered)
-        assert not registry.is_available(Backend.QUDA)
+        """Verify requesting unavailable backend raises BackendNotAvailableError.
+
+        Uses a fresh registry to test behavior without QUDA registered.
+        """
+        # Create a fresh registry to test unavailable behavior
+        test_registry = BackendRegistry()
+
+        # Register only PLAQ backend
+        def dummy_solver() -> str:
+            return "dummy"
+
+        test_registry.register(Backend.PLAQ, dummy_solver)
+
+        # QUDA is not registered in this test registry
+        assert not test_registry.is_available(Backend.QUDA)
 
         with pytest.raises(BackendNotAvailableError) as exc_info:
-            registry.get(Backend.QUDA)
+            test_registry.get(Backend.QUDA)
 
         assert exc_info.value.backend == Backend.QUDA
         assert "QUDA" in str(exc_info.value)
@@ -36,8 +48,9 @@ class TestBackendRegistry:
         # Plaq should be available
         assert registry.is_available(Backend.PLAQ) is True
 
-        # QUDA should not be available
-        assert registry.is_available(Backend.QUDA) is False
+        # Note: QUDA availability depends on whether quda_torch_op is
+        # installed. We don't assert a specific value here since the
+        # QUDA-specific tests are in test_quda_backend.py
 
 
 class TestBackendRegistryUnit:

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "torch>=2.6.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quda_torch_op"
+dynamic = ["version"]
+description = "A minimal PyTorch custom operator extension for QUDA-backed operators"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "torch>=2.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quda_torch_op*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "quda_torch_op._version.__version__"}

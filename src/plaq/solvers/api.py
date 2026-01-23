@@ -173,6 +173,15 @@ def solve(
     import plaq.backends.plaq  # noqa: F401
     from plaq.backends import Backend, BackendNotAvailableError, registry
 
+    def _try_import_quda_backend() -> bool:
+        """Try to import the QUDA backend, returning True if successful."""
+        try:
+            import plaq.backends.quda  # noqa: F401
+
+            return True
+        except ImportError:
+            return False
+
     if action != "wilson":
         msg = f"Unsupported action: {action}. Only 'wilson' is supported."
         raise ValueError(msg)
@@ -184,15 +193,22 @@ def solve(
 
     # Determine which backend to use
     if backend == "auto":
+        # Try to import QUDA backend for auto-detection
+        _try_import_quda_backend()
         # Use QUDA if available and tensors are on CUDA
         is_cuda = b.site.is_cuda
         backend_name = "quda" if is_cuda and registry.is_available(Backend.QUDA) else "plaq"
     elif backend == "plaq":
         backend_name = "plaq"
     else:  # backend == "quda"
+        # Try to import QUDA backend first
+        _try_import_quda_backend()
         if not registry.is_available(Backend.QUDA):
             raise BackendNotAvailableError(Backend.QUDA)
-        backend_name = "quda"
+        # QUDA backend is available, dispatch to it
+        from plaq.backends.quda import quda_solve
+
+        return quda_solve(U, b, action, method, equation, tol, maxiter, precond, dtype, params, bc)
 
     # Set defaults
     if params is None:

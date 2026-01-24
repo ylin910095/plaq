@@ -153,8 +153,9 @@ if quda_available:
     quda_include = quda_home / "include"
     quda_lib = quda_home / "lib"
 
-    # Add QUDA-specific source
+    # Add QUDA-specific sources
     sources.append("csrc/quda_interface.cpp")
+    sources.append("csrc/wilson_interface.cpp")
 
     # Add QUDA and MPI include and library paths
     # QUDA was built with MPI support, so we need MPI headers and libs

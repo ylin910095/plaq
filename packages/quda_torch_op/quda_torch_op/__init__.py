@@ -116,6 +116,53 @@ def quda_get_version() -> str:
     return torch.ops.quda_torch_op.quda_get_version()
 
 
+def wilson_invert(
+    gauge: torch.Tensor,
+    source: torch.Tensor,
+    dims: torch.Tensor,
+    kappa: float,
+    tol: float = 1e-10,
+    maxiter: int = 1000,
+    equation: str = "MdagM",
+    t_boundary: int = -1,
+) -> tuple[torch.Tensor, bool, int, float]:
+    """Solve the Wilson Dirac equation using QUDA.
+
+    Solves either:
+      - M*x = b              (equation="M")
+      - M^dag*M*x = M^dag*b  (equation="MdagM")
+
+    Args:
+        gauge: Gauge field tensor [4, V, 3, 3] in plaq site-layout format
+        source: Source spinor tensor [V, 4, 3] in plaq site-layout format
+        dims: Lattice dimensions tensor [Nx, Ny, Nz, Nt] as int64
+        kappa: Hopping parameter kappa = 1/(2*(m0 + 4r))
+        tol: Solver tolerance (default: 1e-10)
+        maxiter: Maximum iterations (default: 1000)
+        equation: "M" for direct solve or "MdagM" for normal equation (default)
+        t_boundary: Temporal boundary: -1 for antiperiodic (default), +1 for periodic
+
+    Returns:
+        Tuple of (solution tensor [V, 4, 3], converged bool, iterations int, residual float)
+
+    Raises:
+        RuntimeError: If QUDA is not available or not initialized.
+
+    Example:
+        >>> import quda_torch_op
+        >>> quda_torch_op.quda_init(0)
+        >>> dims = torch.tensor([4, 4, 4, 8], dtype=torch.int64)
+        >>> gauge = ...  # [4, V, 3, 3] gauge field
+        >>> source = ...  # [V, 4, 3] source spinor
+        >>> x, converged, iters, res = quda_torch_op.wilson_invert(
+        ...     gauge, source, dims, kappa=0.12, tol=1e-10
+        ... )
+    """
+    return torch.ops.quda_torch_op.wilson_invert(
+        gauge, source, dims, kappa, tol, maxiter, equation, t_boundary
+    )
+
+
 __all__ = [
     "__version__",
     "quda_finalize",
@@ -126,4 +173,5 @@ __all__ = [
     "quda_is_available",
     "quda_is_initialized",
     "simple_add",
+    "wilson_invert",
 ]

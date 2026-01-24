@@ -3,14 +3,17 @@ Setup script for quda_torch_op PyTorch extension.
 
 Builds extension with optional QUDA support. QUDA linking is enabled when:
 1. QUDA_HOME environment variable is set to the QUDA installation directory
-2. A CUDA-capable GPU is available
+2. MPI_HOME environment variable is set to the MPI installation directory
+3. A CUDA-capable GPU is available
 
 Usage:
     # Without QUDA (CPU-only ops):
     pip install .
 
     # With QUDA:
-    QUDA_HOME=/opt/quda/install pip install .
+    export QUDA_HOME=/opt/quda/install
+    export MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi
+    pip install .
 """
 
 import os
@@ -41,6 +44,20 @@ def find_quda_home() -> Path | None:
         return None
 
     return quda_path
+
+
+def find_mpi_home() -> Path | None:
+    """Find MPI installation directory from MPI_HOME env var."""
+    mpi_home = os.environ.get("MPI_HOME")
+    if mpi_home is None:
+        return None
+
+    mpi_path = Path(mpi_home)
+    if not mpi_path.exists():
+        print(f"Warning: MPI_HOME={mpi_home} does not exist", file=sys.stderr)
+        return None
+
+    return mpi_path
 
 
 def validate_quda_installation(quda_home: Path) -> bool:
@@ -92,6 +109,15 @@ def check_quda_availability() -> tuple[bool, str]:
     if not validate_quda_installation(quda_home):
         return False, f"QUDA installation at {quda_home} is incomplete."
 
+    # Check for MPI_HOME
+    mpi_home = find_mpi_home()
+    if mpi_home is None:
+        return (
+            False,
+            "MPI_HOME environment variable not set. "
+            "Set MPI_HOME to your MPI installation directory (e.g., /usr/lib/x86_64-linux-gnu/openmpi).",
+        )
+
     return True, f"QUDA found at {quda_home} with {cuda_count} GPU(s) available."
 
 
@@ -132,11 +158,12 @@ if quda_available:
 
     # Add QUDA and MPI include and library paths
     # QUDA was built with MPI support, so we need MPI headers and libs
-    mpi_include = "/usr/lib/x86_64-linux-gnu/openmpi/include"
-    mpi_lib = "/usr/lib/x86_64-linux-gnu/openmpi/lib"
+    mpi_home = find_mpi_home()
+    mpi_include = mpi_home / "include"
+    mpi_lib = mpi_home / "lib"
 
-    include_dirs = [str(quda_include), mpi_include]
-    library_dirs = [str(quda_lib), mpi_lib]
+    include_dirs = [str(quda_include), str(mpi_include)]
+    library_dirs = [str(quda_lib), str(mpi_lib)]
     libraries = ["quda", "mpi"]
 
     # Add QUDA compile flag

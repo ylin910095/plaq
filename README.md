@@ -36,10 +36,12 @@ This repository is organized as a **uv workspace** monorepo containing multiple 
 git clone https://github.com/YOUR_USERNAME/plaq.git
 cd plaq
 
-# Install plaq with all development dependencies
+# Install plaq with all development dependencies (CPU-only, no QUDA)
 uv sync --all-groups
 
-# Install plaq with QUDA backend support (builds C++ extension)
+# Install plaq with QUDA backend support (requires QUDA_HOME and MPI_HOME env vars)
+export QUDA_HOME=/path/to/quda/install  # Path to your QUDA installation
+export MPI_HOME=/path/to/mpi            # Path to your MPI installation (e.g., /usr/lib/x86_64-linux-gnu/openmpi)
 uv sync --all-groups --extra quda
 
 # Or install all workspace packages
@@ -59,10 +61,12 @@ uv run --package quda_torch_op pytest
 ### Using pip
 
 ```bash
-# Install plaq only
+# Install plaq only (CPU-only, no QUDA)
 pip install -e .
 
-# Install with QUDA support (requires torch to be installed first)
+# Install with QUDA support (requires QUDA_HOME and MPI_HOME environment variables)
+export QUDA_HOME=/path/to/quda/install  # Path to your QUDA installation
+export MPI_HOME=/path/to/mpi            # Path to your MPI installation (e.g., /usr/lib/x86_64-linux-gnu/openmpi)
 pip install torch
 pip install -e ./packages/quda_torch_op --no-build-isolation
 ```

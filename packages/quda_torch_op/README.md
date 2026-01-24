@@ -30,6 +30,7 @@ apt-get install libopenmpi-dev
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `QUDA_HOME` | Path to QUDA installation directory | `/opt/quda/install` |
+| `MPI_HOME` | Path to MPI installation directory | `/usr/lib/x86_64-linux-gnu/openmpi` |
 
 ## Installation
 
@@ -40,8 +41,10 @@ The easiest way to install is from the main plaq project:
 ```bash
 cd /path/to/plaq
 
-# Install with QUDA support
-QUDA_HOME=/opt/quda/install uv sync --all-packages --all-groups
+# Install with QUDA support (requires both QUDA_HOME and MPI_HOME)
+export QUDA_HOME=/opt/quda/install
+export MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi
+uv sync --all-packages --all-groups
 
 # Or install without QUDA (CPU-only)
 uv sync --all-packages --all-groups
@@ -50,8 +53,10 @@ uv sync --all-packages --all-groups
 ### Standalone installation
 
 ```bash
-# With QUDA support
-QUDA_HOME=/opt/quda/install pip install .
+# With QUDA support (requires both QUDA_HOME and MPI_HOME)
+export QUDA_HOME=/opt/quda/install
+export MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi
+pip install .
 
 # Without QUDA (CPU-only)
 pip install .
@@ -63,6 +68,7 @@ During build, you'll see one of these messages:
 
 - `QUDA status: QUDA found at /path/to/quda with N GPU(s) available.` - QUDA support enabled
 - `QUDA status: QUDA_HOME environment variable not set...` - Building without QUDA
+- `QUDA status: MPI_HOME environment variable not set...` - Building without QUDA (MPI required)
 - `QUDA status: No CUDA-capable GPU found...` - Building without QUDA
 
 ## Usage
@@ -171,7 +177,9 @@ If you see "No CUDA-capable GPU found", verify:
 QUDA requires MPI. If you see MPI-related errors:
 
 1. Install OpenMPI dev headers: `apt-get install libopenmpi-dev`
-2. Ensure MPI libraries are in the library path
+2. Set the `MPI_HOME` environment variable: `export MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi`
+3. Verify MPI installation contains `include/mpi.h` and `lib/libmpi.so`
+4. Ensure MPI libraries are in the library path
 
 ## Project Structure
 

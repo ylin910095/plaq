@@ -118,12 +118,12 @@ def quda_get_version() -> str:
 
 __all__ = [
     "__version__",
-    "simple_add",
-    "quda_is_available",
-    "quda_get_device_count",
-    "quda_init",
     "quda_finalize",
-    "quda_is_initialized",
     "quda_get_device",
+    "quda_get_device_count",
     "quda_get_version",
+    "quda_init",
+    "quda_is_available",
+    "quda_is_initialized",
+    "simple_add",
 ]

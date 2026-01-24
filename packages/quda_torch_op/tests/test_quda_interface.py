@@ -11,7 +11,6 @@ NVML initialization issues. Tests are designed to work around this.
 """
 
 import pytest
-
 import quda_torch_op
 
 

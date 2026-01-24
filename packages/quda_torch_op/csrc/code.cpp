@@ -7,6 +7,8 @@
 
 #include <Python.h>
 
+#include <string>
+#include <tuple>
 #include <torch/csrc/stable/library.h>
 #include <torch/csrc/stable/ops.h>
 #include <torch/csrc/stable/tensor.h>
@@ -132,6 +134,21 @@ int64_t quda_get_device_stub() {
 std::string quda_get_version_stub() {
     return "not available";
 }
+
+std::tuple<torch::stable::Tensor, bool, int64_t, double> wilson_invert_stub(
+    const torch::stable::Tensor& gauge,
+    const torch::stable::Tensor& source,
+    const torch::stable::Tensor& dims,
+    double kappa,
+    double tol,
+    int64_t maxiter,
+    const std::string& equation,
+    int64_t t_boundary
+) {
+    STD_TORCH_CHECK(false, "QUDA is not available. Rebuild with QUDA_HOME set to enable QUDA support.");
+    // Never reached, but needed for return type
+    return std::make_tuple(source, false, 0, 1.0);
+}
 #endif
 
 // Defines the operator library
@@ -147,6 +164,11 @@ STABLE_TORCH_LIBRARY(quda_torch_op, m) {
   m.def("quda_is_initialized() -> bool");
   m.def("quda_get_device() -> int");
   m.def("quda_get_version() -> str");
+
+  // Wilson Dslash solver
+  m.def("wilson_invert(Tensor gauge, Tensor source, Tensor dims, float kappa, "
+        "float tol, int maxiter, str equation, int t_boundary) -> "
+        "(Tensor, bool, int, float)");
 }
 
 // Registers CPU implementation for simple_add
@@ -164,6 +186,7 @@ STABLE_TORCH_LIBRARY_IMPL(quda_torch_op, CompositeExplicitAutograd, m) {
   m.impl("quda_is_initialized", TORCH_BOX(&quda_is_initialized_stub));
   m.impl("quda_get_device", TORCH_BOX(&quda_get_device_stub));
   m.impl("quda_get_version", TORCH_BOX(&quda_get_version_stub));
+  m.impl("wilson_invert", TORCH_BOX(&wilson_invert_stub));
 }
 #endif
 

@@ -4,6 +4,12 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 
 [![CI](https://github.com/ylin910095/plaq/actions/workflows/ci.yml/badge.svg)](https://github.com/ylin910095/plaq/actions/workflows/ci.yml)
 
+
+> [!WARNING]
+> **Disclaimer:** Most codes are AI generated. DO NOT USE IN PRODUCTION.
+> Use at your own risk.
+
+
 ## Features
 
 - High-precision computations with `torch.complex128` by default

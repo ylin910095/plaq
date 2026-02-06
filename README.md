@@ -33,7 +33,7 @@ This repository is organized as a **uv workspace** monorepo containing multiple 
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/plaq.git
+git clone https://github.com/ylin910095/plaq.git
 cd plaq
 
 # Install plaq with all development dependencies (CPU-only, no QUDA)
@@ -213,13 +213,16 @@ plaq/
 │       ├── py.typed             # PEP 561 type marker
 │       └── utils/               # Utility functions
 ├── tests/
+│   ├── __init__.py              # Test package init
 │   ├── test_backends.py         # Backend abstraction tests
 │   ├── test_quda_backend.py     # QUDA backend integration tests
+│   ├── test_quda_wilson_comparison.py  # QUDA vs plaq Wilson operator comparison
 │   ├── test_gamma.py            # Gamma matrix tests
 │   ├── test_layouts.py          # Layout packing tests
 │   ├── test_fields.py           # Field tests
 │   ├── test_wilson.py           # Wilson operator tests
 │   ├── test_solvers.py          # Solver tests (CG, BiCGStab)
+│   ├── test_solver_backend.py   # Solver backend tests
 │   └── test_placeholder.py      # Basic tests
 ├── pyproject.toml               # Workspace root configuration
 ├── uv.lock                      # Workspace lockfile

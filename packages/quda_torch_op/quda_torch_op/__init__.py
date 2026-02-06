@@ -116,6 +116,104 @@ def quda_get_version() -> str:
     return torch.ops.quda_torch_op.quda_get_version()
 
 
+def quda_wilson_mat(
+    gauge: torch.Tensor,
+    psi: torch.Tensor,
+    kappa: float,
+    antiperiodic_t: bool = True,
+) -> torch.Tensor:
+    """Apply the Wilson Dirac operator M using QUDA.
+
+    Computes M * psi where M is the Wilson-Dirac operator with the specified
+    hopping parameter kappa.
+
+    Args:
+        gauge: Gauge field tensor with shape [4, V, 3, 3] in plaq layout.
+            The first index is the direction (x, y, z, t), V is the lattice
+            volume, and the last two indices are color (SU(3) matrix).
+        psi: Spinor field tensor with shape [V, 4, 3] in plaq layout.
+            The indices are (site, spin, color).
+        kappa: Hopping parameter. Related to bare mass by kappa = 1/(2*(m0 + 4r)).
+        antiperiodic_t: If True, use antiperiodic boundary conditions in the
+            time direction (standard for fermions). If False, use periodic BC.
+
+    Returns:
+        Result spinor tensor with shape [V, 4, 3].
+
+    Raises:
+        RuntimeError: If QUDA is not initialized or not available.
+
+    Example:
+        >>> import quda_torch_op
+        >>> quda_torch_op.quda_init(0)
+        >>> # gauge has shape [4, V, 3, 3], psi has shape [V, 4, 3]
+        >>> result = quda_torch_op.quda_wilson_mat(gauge, psi, kappa=0.125)
+        >>> quda_torch_op.quda_finalize()
+    """
+    return torch.ops.quda_torch_op.quda_wilson_mat(gauge, psi, kappa, antiperiodic_t)
+
+
+def quda_wilson_mat_dag(
+    gauge: torch.Tensor,
+    psi: torch.Tensor,
+    kappa: float,
+    antiperiodic_t: bool = True,
+) -> torch.Tensor:
+    """Apply the adjoint Wilson Dirac operator M^dag using QUDA.
+
+    Computes M^dag * psi where M^dag is the Hermitian conjugate of the
+    Wilson-Dirac operator.
+
+    Args:
+        gauge: Gauge field tensor with shape [4, V, 3, 3] in plaq layout.
+        psi: Spinor field tensor with shape [V, 4, 3] in plaq layout.
+        kappa: Hopping parameter. Related to bare mass by kappa = 1/(2*(m0 + 4r)).
+        antiperiodic_t: If True, use antiperiodic boundary conditions in the
+            time direction. If False, use periodic BC.
+
+    Returns:
+        Result spinor tensor with shape [V, 4, 3].
+
+    Raises:
+        RuntimeError: If QUDA is not initialized or not available.
+
+    Note:
+        For the Wilson operator, M^dag = gamma5 * M * gamma5 (gamma5-hermiticity).
+    """
+    return torch.ops.quda_torch_op.quda_wilson_mat_dag(gauge, psi, kappa, antiperiodic_t)
+
+
+def quda_wilson_mat_dag_mat(
+    gauge: torch.Tensor,
+    psi: torch.Tensor,
+    kappa: float,
+    antiperiodic_t: bool = True,
+) -> torch.Tensor:
+    """Apply M^dag * M (the normal operator) using QUDA.
+
+    Computes M^dag * M * psi, which is a Hermitian positive semi-definite
+    operator suitable for conjugate gradient solvers.
+
+    Args:
+        gauge: Gauge field tensor with shape [4, V, 3, 3] in plaq layout.
+        psi: Spinor field tensor with shape [V, 4, 3] in plaq layout.
+        kappa: Hopping parameter. Related to bare mass by kappa = 1/(2*(m0 + 4r)).
+        antiperiodic_t: If True, use antiperiodic boundary conditions in the
+            time direction. If False, use periodic BC.
+
+    Returns:
+        Result spinor tensor with shape [V, 4, 3].
+
+    Raises:
+        RuntimeError: If QUDA is not initialized or not available.
+
+    Note:
+        M^dag * M is Hermitian and positive semi-definite, making it suitable
+        for solving linear systems with the conjugate gradient method.
+    """
+    return torch.ops.quda_torch_op.quda_wilson_mat_dag_mat(gauge, psi, kappa, antiperiodic_t)
+
+
 __all__ = [
     "__version__",
     "quda_finalize",
@@ -125,5 +223,8 @@ __all__ = [
     "quda_init",
     "quda_is_available",
     "quda_is_initialized",
+    "quda_wilson_mat",
+    "quda_wilson_mat_dag",
+    "quda_wilson_mat_dag_mat",
     "simple_add",
 ]

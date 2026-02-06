@@ -101,3 +101,28 @@ x, info = pq.solve(U, b, equation="M")      # Uses BiCGStab
 - NumPy-style docstrings with LaTeX math notation
 - All code is Pyrefly type-checked
 - Line length: 100 characters
+
+## QUDA Interface
+
+### Build Commands
+
+```bash
+# Rebuild QUDA interface
+QUDA_HOME=/opt/quda/install MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi \
+  uv pip install -e packages/quda_torch_op --no-build-isolation
+
+# Run comparison tests
+uv run pytest tests/test_quda_wilson_comparison.py -v
+```
+
+### Key Files
+
+- `packages/quda_torch_op/csrc/quda_interface.cpp`: Main interface (gauge/spinor conversion, operator calls)
+- `packages/quda_torch_op/csrc/code.cpp`: Python bindings (op schema)
+- `packages/quda_torch_op/quda_torch_op/__init__.py`: Python wrappers
+
+### Important Notes
+
+- **`ga_pad` must be non-zero**: QUDA requires `ga_pad = volume / min(dims) / 2` for native GPU gauge fields. Setting `ga_pad = 0` causes silent data corruption during the QDP→native gauge copy.
+- **Lattice dim inference**: `infer_lattice_dims` assumes Nx=Ny=Nz with Nt>=Nx. For non-standard lattice shapes, pass dimensions explicitly.
+- **QDP gauge order**: Uses `QUDA_QDP_GAUGE_ORDER` with `void*[4]` pointer array. MILC gauge order is not compiled in this QUDA build.

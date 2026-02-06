@@ -132,6 +132,33 @@ int64_t quda_get_device_stub() {
 std::string quda_get_version_stub() {
     return "not available";
 }
+
+torch::stable::Tensor quda_wilson_mat_stub(
+    const torch::stable::Tensor& gauge,
+    const torch::stable::Tensor& psi,
+    double kappa,
+    bool antiperiodic_t) {
+    STD_TORCH_CHECK(false, "QUDA is not available. Rebuild with QUDA_HOME set to enable QUDA support.");
+    return torch::stable::Tensor();  // Unreachable
+}
+
+torch::stable::Tensor quda_wilson_mat_dag_stub(
+    const torch::stable::Tensor& gauge,
+    const torch::stable::Tensor& psi,
+    double kappa,
+    bool antiperiodic_t) {
+    STD_TORCH_CHECK(false, "QUDA is not available. Rebuild with QUDA_HOME set to enable QUDA support.");
+    return torch::stable::Tensor();  // Unreachable
+}
+
+torch::stable::Tensor quda_wilson_mat_dag_mat_stub(
+    const torch::stable::Tensor& gauge,
+    const torch::stable::Tensor& psi,
+    double kappa,
+    bool antiperiodic_t) {
+    STD_TORCH_CHECK(false, "QUDA is not available. Rebuild with QUDA_HOME set to enable QUDA support.");
+    return torch::stable::Tensor();  // Unreachable
+}
 #endif
 
 // Defines the operator library
@@ -147,6 +174,17 @@ STABLE_TORCH_LIBRARY(quda_torch_op, m) {
   m.def("quda_is_initialized() -> bool");
   m.def("quda_get_device() -> int");
   m.def("quda_get_version() -> str");
+
+  // Wilson Dslash operators
+  // Applies the Wilson Dirac operator M to a spinor field.
+  // gauge: [4, V, 3, 3] gauge field in plaq layout
+  // psi: [V, 4, 3] spinor field in plaq layout
+  // kappa: hopping parameter (1 / (2 * (m0 + 4*r)))
+  // antiperiodic_t: if true, use antiperiodic BC in time direction
+  // Returns: [V, 4, 3] result spinor
+  m.def("quda_wilson_mat(Tensor gauge, Tensor psi, float kappa, bool antiperiodic_t) -> Tensor");
+  m.def("quda_wilson_mat_dag(Tensor gauge, Tensor psi, float kappa, bool antiperiodic_t) -> Tensor");
+  m.def("quda_wilson_mat_dag_mat(Tensor gauge, Tensor psi, float kappa, bool antiperiodic_t) -> Tensor");
 }
 
 // Registers CPU implementation for simple_add
@@ -164,6 +202,9 @@ STABLE_TORCH_LIBRARY_IMPL(quda_torch_op, CompositeExplicitAutograd, m) {
   m.impl("quda_is_initialized", TORCH_BOX(&quda_is_initialized_stub));
   m.impl("quda_get_device", TORCH_BOX(&quda_get_device_stub));
   m.impl("quda_get_version", TORCH_BOX(&quda_get_version_stub));
+  m.impl("quda_wilson_mat", TORCH_BOX(&quda_wilson_mat_stub));
+  m.impl("quda_wilson_mat_dag", TORCH_BOX(&quda_wilson_mat_dag_stub));
+  m.impl("quda_wilson_mat_dag_mat", TORCH_BOX(&quda_wilson_mat_dag_mat_stub));
 }
 #endif
 

@@ -92,16 +92,60 @@ class TestQudaBackendRegistration:
         assert torch.allclose(result, expected)
 
 
-class TestQudaSolverNotImplemented:
-    """Tests that verify QUDA solver is not yet implemented."""
+class TestQudaSolverBasic:
+    """Tests for QUDA solver basic functionality."""
 
-    def test_quda_solve_raises_not_implemented(self) -> None:
-        """Verify quda_solve raises NotImplementedError."""
+    def test_quda_solve_mdagm_identity_gauge(self) -> None:
+        """Test quda_solve with equation='MdagM' on identity gauge (CG path)."""
+        import plaq as pq
         from plaq.backends.quda import quda_solve
 
-        # Create minimal test inputs - using None since we expect
-        # NotImplementedError before any validation
-        with pytest.raises(NotImplementedError) as exc_info:
-            quda_solve(None, None)  # type: ignore
+        lat = pq.Lattice((4, 4, 4, 8))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
 
-        assert "not yet implemented" in str(exc_info.value).lower()
+        U = pq.GaugeField.eye(lat)
+        b = pq.SpinorField.random(lat)
+        params = pq.WilsonParams(mass=0.1)
+
+        x, info = quda_solve(U, b, equation="MdagM", params=params, bc=bc, tol=1e-10)
+
+        assert info.converged
+        assert info.backend == "quda"
+        assert info.method == "cg"
+        assert info.equation == "MdagM"
+
+        # Verify solution: MdagM x = Mdag b
+        from plaq.operators import apply_Mdag, apply_MdagM
+
+        Mdag_b = apply_Mdag(U, b, params, bc)
+        MdagM_x = apply_MdagM(U, x, params, bc)
+        res_norm = torch.norm(MdagM_x.site - Mdag_b.site) / torch.norm(Mdag_b.site)
+        assert res_norm < 1e-8
+
+    def test_quda_solve_m_identity_gauge(self) -> None:
+        """Test quda_solve with equation='M' on identity gauge (BiCGStab path)."""
+        import plaq as pq
+        from plaq.backends.quda import quda_solve
+
+        lat = pq.Lattice((4, 4, 4, 8))
+        bc = pq.BoundaryCondition()
+        lat.build_neighbor_tables(bc)
+
+        U = pq.GaugeField.eye(lat)
+        b = pq.SpinorField.random(lat)
+        params = pq.WilsonParams(mass=0.1)
+
+        x, info = quda_solve(U, b, equation="M", params=params, bc=bc, tol=1e-10)
+
+        assert info.converged
+        assert info.backend == "quda"
+        assert info.method == "bicgstab"
+        assert info.equation == "M"
+
+        # Verify M x = b
+        from plaq.operators import apply_M
+
+        Mx = apply_M(U, x, params, bc)
+        res_norm = torch.norm(Mx.site - b.site) / torch.norm(b.site)
+        assert res_norm < 1e-8

@@ -208,7 +208,9 @@ def solve(
         # QUDA backend is available, dispatch to it
         from plaq.backends.quda import quda_solve
 
-        return quda_solve(U, b, action, method, equation, tol, maxiter, precond, dtype, params, bc)
+        return quda_solve(
+            U, b, action, method, equation, tol, maxiter, precond, dtype, params, bc, callback
+        )
 
     # Set defaults
     if params is None:

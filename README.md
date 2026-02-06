@@ -13,10 +13,11 @@ A lattice gauge theory toolkit for Python, built on PyTorch.
 ## Features
 
 - High-precision computations with `torch.complex128` by default
-- Built on PyTorch for GPU acceleration (CPU-only for now)
+- Built on PyTorch for GPU acceleration
 - Iterative Krylov solvers (CG, BiCGStab) for lattice QCD linear systems
 - Even-odd preconditioning for improved solver performance
-- Backend abstraction layer for multiple solver implementations (PyTorch, QUDA)
+- Backend abstraction layer with native plaq and QUDA solver backends
+- QUDA backend for GPU-accelerated Wilson operator applications
 - Type-checked with Pyrefly
 - Comprehensive documentation with LaTeX equation support
 
@@ -98,6 +99,9 @@ result = pq.apply_M(U, psi, params, bc)
 b = pq.SpinorField.random(lat)
 x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc)
 print(f"Solver converged: {info.converged}, iterations: {info.iters}")
+
+# Use the QUDA backend for GPU-accelerated solves (requires quda_torch_op)
+# x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda")
 
 # Access gamma matrices
 print(pq.gamma[0])  # gamma_0
@@ -216,6 +220,7 @@ plaq/
 │   ├── __init__.py              # Test package init
 │   ├── test_backends.py         # Backend abstraction tests
 │   ├── test_quda_backend.py     # QUDA backend integration tests
+│   ├── test_quda_solver.py      # QUDA solver cross-backend comparison tests
 │   ├── test_quda_wilson_comparison.py  # QUDA vs plaq Wilson operator comparison
 │   ├── test_gamma.py            # Gamma matrix tests
 │   ├── test_layouts.py          # Layout packing tests

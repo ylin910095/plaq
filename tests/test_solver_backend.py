@@ -38,12 +38,11 @@ class TestSolverBackendSelection:
         assert info.converged
         assert info.backend == "plaq"
 
-    def test_solve_quda_unavailable_raises(self) -> None:
-        """Verify backend='quda' raises appropriate error.
+    def test_solve_quda_backend(self) -> None:
+        """Verify backend='quda' behavior.
 
         When quda_torch_op is not installed, raises BackendNotAvailableError.
-        When quda_torch_op is installed but solve is not implemented, raises
-        NotImplementedError.
+        When quda_torch_op is installed, solves successfully.
         """
         lat = pq.Lattice((4, 4, 4, 4))
         bc = pq.BoundaryCondition()
@@ -61,11 +60,10 @@ class TestSolverBackendSelection:
             has_quda = False
 
         if has_quda:
-            # QUDA package is installed but solve is not implemented
-            with pytest.raises(NotImplementedError) as exc_info:
-                pq.solve(U, b, backend="quda")
-
-            assert "not yet implemented" in str(exc_info.value).lower()
+            # QUDA package is installed, solve should succeed
+            _x, info = pq.solve(U, b, backend="quda", tol=1e-8)
+            assert info.converged
+            assert info.backend == "quda"
         else:
             # QUDA package is not installed
             with pytest.raises(pq.BackendNotAvailableError) as exc_info:

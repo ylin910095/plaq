@@ -433,9 +433,7 @@ class TestLatticeSizes:
             (8, 8, 8, 8),
         ],
     )
-    def test_various_lattice_sizes(
-        self, lattice_shape: tuple[int, int, int, int]
-    ) -> None:
+    def test_various_lattice_sizes(self, lattice_shape: tuple[int, int, int, int]) -> None:
         """Compare operators on different lattice sizes."""
         lat = pq.Lattice(lattice_shape)
         bc = pq.BoundaryCondition()
@@ -518,7 +516,6 @@ class TestBoundaryHoppingDiagnostics:
 
         # Check per-timeslice difference
         Nt = lat.shape[3]
-        V_spatial = lat.volume // Nt
 
         for t in range(Nt):
             # Get sites at this timeslice
@@ -528,9 +525,7 @@ class TestBoundaryHoppingDiagnostics:
                 if coords[3] == t:
                     t_mask[site] = True
 
-            diff_t = torch.abs(
-                result_plaq.site[t_mask] - result_quda.site[t_mask]
-            ).max().item()
+            diff_t = torch.abs(result_plaq.site[t_mask] - result_quda.site[t_mask]).max().item()
             assert diff_t < 1e-10, f"Timeslice t={t} mismatch: max diff = {diff_t}"
 
     def test_unique_value_antiperiodic(self) -> None:
@@ -586,7 +581,7 @@ class TestCbIdxFormula:
                                 f"parity={parity}, cb_v1={cb_v1}, cb_v2={cb_v2}"
                             )
 
-        assert len(mismatches) == 0, f"cb_idx mismatches:\n" + "\n".join(mismatches[:20])
+        assert len(mismatches) == 0, "cb_idx mismatches:\n" + "\n".join(mismatches[:20])
 
     def test_cb_idx_formula_2x2x2x2(self) -> None:
         """Verify cb_idx formula on 2x2x2x2 lattice (minimal for manual verification)."""
@@ -618,10 +613,12 @@ class TestCbIdxFormula:
         if mismatches:
             print(f"\nMismatches found: {len(mismatches)}")
             for m in mismatches:
-                print(f"  ({m[0]},{m[1]},{m[2]},{m[3]}): site={m[4]}, parity={m[5]}, "
-                      f"shift={m[6]}, quda={m[7]}")
+                print(
+                    f"  ({m[0]},{m[1]},{m[2]},{m[3]}): site={m[4]}, parity={m[5]}, "
+                    f"shift={m[6]}, quda={m[7]}"
+                )
 
-        assert len(mismatches) == 0, f"cb_idx mismatches found"
+        assert len(mismatches) == 0, "cb_idx mismatches found"
 
 
 @pytest.mark.usefixtures("quda_initialized")
@@ -703,7 +700,9 @@ class TestDetailedComparison:
             (192, "t- backward (periodic wrap)"),
         ]
 
-        print("\nsite | description          | plaq                  | quda                  | diff")
+        print(
+            "\nsite | description          | plaq                  | quda                  | diff"
+        )
         print("-" * 100)
 
         for site, desc in neighbor_sites:
@@ -759,8 +758,10 @@ class TestDetailedComparison:
                 val_quda = result_quda.site[0, spin, color]
                 if abs(val_plaq) > 1e-12 or abs(val_quda) > 1e-12:
                     diff = abs(val_plaq - val_quda)
-                    print(f"  site=0, spin={spin}, color={color}: "
-                          f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e}")
+                    print(
+                        f"  site=0, spin={spin}, color={color}: "
+                        f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e}"
+                    )
 
         print("\nAll non-zero values:")
         for site in range(lat.volume):
@@ -772,8 +773,10 @@ class TestDetailedComparison:
                         diff = abs(val_plaq - val_quda)
                         coords = lat.coord(site)
                         marker = "***" if diff > 1e-10 else ""
-                        print(f"  site={site} {coords}, s{spin}c{color}: "
-                              f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e} {marker}")
+                        print(
+                            f"  site={site} {coords}, s{spin}c{color}: "
+                            f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e} {marker}"
+                        )
 
         diff = torch.abs(result_plaq.site - result_quda.site).max().item()
         assert diff < 1e-10, f"Gauge parity test failed: max diff = {diff}"
@@ -814,8 +817,10 @@ class TestDetailedComparison:
                 val_quda = result_quda.site[0, spin, color]
                 if abs(val_plaq) > 1e-12 or abs(val_quda) > 1e-12:
                     diff = abs(val_plaq - val_quda)
-                    print(f"  spin={spin}, color={color}: "
-                          f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e}")
+                    print(
+                        f"  spin={spin}, color={color}: "
+                        f"plaq={val_plaq:.6f}, quda={val_quda:.6f}, diff={diff:.2e}"
+                    )
 
         diff = torch.abs(result_plaq.site - result_quda.site).max().item()
         assert diff < 1e-10, f"Row/col transpose test failed: max diff = {diff}"
@@ -876,8 +881,10 @@ class TestDetailedComparison:
                     if abs(val_plaq) > 1e-12 or abs(val_quda) > 1e-12:
                         diff = abs(val_plaq - val_quda)
                         marker = "***" if diff > 1e-10 else ""
-                        print(f"{site:4d} | {desc:40} | s{spin}c{color} | "
-                              f"{val_plaq.real:+.4f} | {val_quda.real:+.4f} | {diff:.2e} {marker}")
+                        print(
+                            f"{site:4d} | {desc:40} | s{spin}c{color} | "
+                            f"{val_plaq.real:+.4f} | {val_quda.real:+.4f} | {diff:.2e} {marker}"
+                        )
 
         diff = torch.abs(result_plaq.site - result_quda.site).max().item()
         assert diff < 1e-10, f"Parity swap test failed: max diff = {diff}"
@@ -941,12 +948,18 @@ class TestDetailedComparison:
             inferred_quda = abs(val_quda) * 2
 
             if hop_type == "fwd":
-                expected = {"1 x+": 1, "4 y+": 1, "16 z+": 1, "64 t+": 1}.get(f"{site} {desc[:2]}", "?")
+                expected = {"1 x+": 1, "4 y+": 1, "16 z+": 1, "64 t+": 1}.get(
+                    f"{site} {desc[:2]}", "?"
+                )
             else:
-                expected = {"3 x-": 4, "12 y-": 13, "48 z-": 49, "192 t-": 193}.get(f"{site} {desc[:2]}", "?")
+                expected = {"3 x-": 4, "12 y-": 13, "48 z-": 49, "192 t-": 193}.get(
+                    f"{site} {desc[:2]}", "?"
+                )
 
-            print(f"{site:4d} | {desc:40} | {val_plaq:+.4f} | {val_quda:+.4f} | "
-                  f"plaq~{inferred_plaq:.0f} quda~{inferred_quda:.0f} | expected~{expected}")
+            print(
+                f"{site:4d} | {desc:40} | {val_plaq:+.4f} | {val_quda:+.4f} | "
+                f"plaq~{inferred_plaq:.0f} quda~{inferred_quda:.0f} | expected~{expected}"
+            )
 
         # Let's also look at what QUDA produces at site 0
         print("\nAt source site 0:")
@@ -971,7 +984,6 @@ class TestDetailedComparison:
         U_data = torch.eye(3, dtype=torch.complex128).unsqueeze(0).unsqueeze(0)
         U_data = U_data.expand(4, lat.volume, 3, 3).clone()
 
-        Vh = lat.volume // 2
         for site in range(lat.volume):
             coords = lat.coord(site)
             parity = (coords[0] + coords[1] + coords[2] + coords[3]) % 2
@@ -996,7 +1008,7 @@ class TestDetailedComparison:
         result_quda = _apply_M_quda(U, psi, params, bc)
 
         print("\nBackward gauge access trace:")
-        print(f"Source site 0: (0,0,0,0), parity=0, cb_idx=0")
+        print("Source site 0: (0,0,0,0), parity=0, cb_idx=0")
         print(f"Gauge U_x(0) value: {U_data[0, 0, 0, 0].real:.0f} (encoded: parity=0, cb=0)")
         print()
 
@@ -1013,8 +1025,12 @@ class TestDetailedComparison:
             parity = sum(coords) % 2
             cb_idx = target_site >> 1
             expected_gauge_val = 1.0 + parity * 1000 + cb_idx
-            actual_gauge_val = U_data[0 if "x" in dir_name else 1 if "y" in dir_name else 2 if "z" in dir_name else 3,
-                                      target_site, 0, 0].real
+            actual_gauge_val = U_data[
+                0 if "x" in dir_name else 1 if "y" in dir_name else 2 if "z" in dir_name else 3,
+                target_site,
+                0,
+                0,
+            ].real
 
             # The result at target_site should be ~ -0.5 * gauge_val (for spin=0, color=0)
             val_plaq = result_plaq.site[target_site, 0, 0].real
@@ -1023,7 +1039,9 @@ class TestDetailedComparison:
             inferred_plaq_gauge = abs(val_plaq) * 2
             inferred_quda_gauge = abs(val_quda) * 2
 
-            print(f"{dir_name}: target site {target_site} {coords}, parity={parity}, cb_idx={cb_idx}")
+            print(
+                f"{dir_name}: target site {target_site} {coords}, parity={parity}, cb_idx={cb_idx}"
+            )
             print(f"     Expected gauge {gauge_name} val: {expected_gauge_val:.0f}")
             print(f"     Actual gauge val at site: {actual_gauge_val:.0f}")
             print(f"     Plaq result: {val_plaq:.4f} -> inferred gauge ~{inferred_plaq_gauge:.0f}")
@@ -1085,7 +1103,9 @@ class TestDetailedComparison:
             val_quda = result_quda.site[site, 0, 0].real
             inferred_plaq = abs(val_plaq) * 2
             inferred_quda = abs(val_quda) * 2
-            print(f"Site {site:3d} {desc}: plaq~{inferred_plaq:.0f}, quda~{inferred_quda:.0f}, expected={expected_gauge}")
+            print(
+                f"Site {site:3d} {desc}: plaq~{inferred_plaq:.0f}, quda~{inferred_quda:.0f}, expected={expected_gauge}"
+            )
 
         diff = torch.abs(result_plaq.site - result_quda.site).max().item()
         print(f"\nMax diff: {diff}")
@@ -1149,16 +1169,18 @@ class TestDetailedComparison:
             val_quda = result_quda.site[site, 0, 0]
             diff = abs(val_plaq - val_quda)
             marker = "***" if diff > 1e-10 else ""
-            print(f"{site:4d} | {desc:30s} | U={expected_gauge} | "
-                  f"{val_plaq.real:+.4f}{val_plaq.imag:+.4f}j | "
-                  f"{val_quda.real:+.4f}{val_quda.imag:+.4f}j {marker}")
+            print(
+                f"{site:4d} | {desc:30s} | U={expected_gauge} | "
+                f"{val_plaq.real:+.4f}{val_plaq.imag:+.4f}j | "
+                f"{val_quda.real:+.4f}{val_quda.imag:+.4f}j {marker}"
+            )
 
         diff = torch.abs(result_plaq.site - result_quda.site).max().item()
         print(f"\nMax diff: {diff}")
 
     def test_cb_idx_ordering_within_parity(self) -> None:
         """Investigate how QUDA orders sites within each parity class."""
-        lat = pq.Lattice((4, 4, 4, 4))
+        _lat = pq.Lattice((4, 4, 4, 4))
 
         print("\nCheckerboard index analysis:")
         print("Comparing plaq's cb_idx = site >> 1 with alternative orderings")
@@ -1186,7 +1208,9 @@ class TestDetailedComparison:
                             # index = (x + Nx*(y + Ny*z)) / 2 for fixed t
                             # This is more complex for 4D
 
-                            print(f"{site:4d} | ({x},{y},{z},{t}) | {cb_idx_shift:14d} | {alt_cb_x_first:16d}")
+                            print(
+                                f"{site:4d} | ({x},{y},{z},{t}) | {cb_idx_shift:14d} | {alt_cb_x_first:16d}"
+                            )
                             even_count += 1
 
         print()
@@ -1204,5 +1228,7 @@ class TestDetailedComparison:
                             cb_idx_shift = site >> 1
                             alt_cb_x_first = (x // 2) + 2 * (y + 4 * (z + 4 * t))
 
-                            print(f"{site:4d} | ({x},{y},{z},{t}) | {cb_idx_shift:14d} | {alt_cb_x_first:16d}")
+                            print(
+                                f"{site:4d} | ({x},{y},{z},{t}) | {cb_idx_shift:14d} | {alt_cb_x_first:16d}"
+                            )
                             odd_count += 1

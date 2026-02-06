@@ -18,7 +18,7 @@ class TestSolverBackendSelection:
         b = pq.SpinorField.random(lat)
 
         # Default backend should be plaq on CPU
-        _x, info = pq.solve(U, b, tol=1e-8)
+        _x, info = pq.solve(U, b, tol=1e-10)
 
         assert info.converged
         assert info.backend == "plaq"
@@ -33,7 +33,7 @@ class TestSolverBackendSelection:
         b = pq.SpinorField.random(lat)
 
         # Explicit plaq backend
-        _x, info = pq.solve(U, b, backend="plaq", tol=1e-8)
+        _x, info = pq.solve(U, b, backend="plaq", tol=1e-10)
 
         assert info.converged
         assert info.backend == "plaq"
@@ -61,7 +61,7 @@ class TestSolverBackendSelection:
 
         if has_quda:
             # QUDA package is installed, solve should succeed
-            _x, info = pq.solve(U, b, backend="quda", tol=1e-8)
+            _x, info = pq.solve(U, b, backend="quda", tol=1e-10)
             assert info.converged
             assert info.backend == "quda"
         else:
@@ -81,13 +81,13 @@ class TestSolverBackendSelection:
         b = pq.SpinorField.random(lat)
 
         # Test with default backend
-        _x, info = pq.solve(U, b, tol=1e-8)
+        _x, info = pq.solve(U, b, tol=1e-10)
         assert hasattr(info, "backend")
         assert isinstance(info.backend, str)
         assert info.backend == "plaq"
 
         # Test with explicit backend
-        _x, info = pq.solve(U, b, backend="plaq", tol=1e-8)
+        _x, info = pq.solve(U, b, backend="plaq", tol=1e-10)
         assert info.backend == "plaq"
 
     def test_solve_invalid_backend_raises(self) -> None:
@@ -114,7 +114,7 @@ class TestSolverBackendSelection:
         b = pq.SpinorField.random(lat)
 
         # Auto backend should select plaq on CPU
-        _x, info = pq.solve(U, b, backend="auto", tol=1e-8)
+        _x, info = pq.solve(U, b, backend="auto", tol=1e-10)
 
         assert info.converged
         assert info.backend == "plaq"
@@ -129,7 +129,7 @@ class TestSolverBackendSelection:
         b = pq.SpinorField.random(lat)
 
         # Solve with even-odd preconditioning
-        _x, info = pq.solve(U, b, precond="eo", tol=1e-8)
+        _x, info = pq.solve(U, b, precond="eo", tol=1e-10)
 
         assert info.converged
         assert info.backend == "plaq"

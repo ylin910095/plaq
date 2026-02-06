@@ -108,7 +108,7 @@ class TestQudaSolverBasic:
         b = pq.SpinorField.random(lat)
         params = pq.WilsonParams(mass=0.1)
 
-        x, info = quda_solve(U, b, equation="MdagM", params=params, bc=bc, tol=1e-10)
+        x, info = quda_solve(U, b, equation="MdagM", params=params, bc=bc, tol=1e-12)
 
         assert info.converged
         assert info.backend == "quda"
@@ -121,7 +121,7 @@ class TestQudaSolverBasic:
         Mdag_b = apply_Mdag(U, b, params, bc)
         MdagM_x = apply_MdagM(U, x, params, bc)
         res_norm = torch.norm(MdagM_x.site - Mdag_b.site) / torch.norm(Mdag_b.site)
-        assert res_norm < 1e-8
+        assert res_norm < 1e-10
 
     def test_quda_solve_m_identity_gauge(self) -> None:
         """Test quda_solve with equation='M' on identity gauge (BiCGStab path)."""
@@ -136,7 +136,7 @@ class TestQudaSolverBasic:
         b = pq.SpinorField.random(lat)
         params = pq.WilsonParams(mass=0.1)
 
-        x, info = quda_solve(U, b, equation="M", params=params, bc=bc, tol=1e-10)
+        x, info = quda_solve(U, b, equation="M", params=params, bc=bc, tol=1e-12)
 
         assert info.converged
         assert info.backend == "quda"
@@ -148,4 +148,4 @@ class TestQudaSolverBasic:
 
         Mx = apply_M(U, x, params, bc)
         res_norm = torch.norm(Mx.site - b.site) / torch.norm(b.site)
-        assert res_norm < 1e-8
+        assert res_norm < 1e-10

@@ -65,7 +65,7 @@ class TestCrossBackendComparison:
         assert info_quda.backend == "quda"
 
         diff = torch.norm(x_plaq.site - x_quda.site) / torch.norm(x_plaq.site)
-        assert diff < 1e-8
+        assert diff < 1e-10
 
     def test_m_identity_gauge(self, lattice_4448: pq.Lattice) -> None:
         """M solve on identity gauge should match between backends."""
@@ -87,7 +87,7 @@ class TestCrossBackendComparison:
         assert info_quda.converged
 
         diff = torch.norm(x_plaq.site - x_quda.site) / torch.norm(x_plaq.site)
-        assert diff < 1e-8
+        assert diff < 1e-10
 
     def test_mdagm_random_gauge(self, lattice_4444: pq.Lattice) -> None:
         """MdagM solve on random gauge should match between backends."""
@@ -109,7 +109,7 @@ class TestCrossBackendComparison:
         assert info_quda.converged
 
         diff = torch.norm(x_plaq.site - x_quda.site) / torch.norm(x_plaq.site)
-        assert diff < 1e-6
+        assert diff < 1e-8
 
     def test_m_random_gauge(self, lattice_4444: pq.Lattice) -> None:
         """M solve on random gauge should match between backends."""
@@ -131,7 +131,7 @@ class TestCrossBackendComparison:
         assert info_quda.converged
 
         diff = torch.norm(x_plaq.site - x_quda.site) / torch.norm(x_plaq.site)
-        assert diff < 1e-6
+        assert diff < 1e-8
 
 
 class TestMassParameterSweep:
@@ -147,7 +147,7 @@ class TestMassParameterSweep:
         params = pq.WilsonParams(mass=mass)
         bc = pq.BoundaryCondition()
 
-        x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-10)
+        x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-12)
 
         assert info.converged
         assert info.backend == "quda"
@@ -156,7 +156,7 @@ class TestMassParameterSweep:
         Mdag_b = apply_Mdag(U, b, params, bc)
         MdagM_x = apply_MdagM(U, x, params, bc)
         res_norm = torch.norm(MdagM_x.site - Mdag_b.site) / torch.norm(Mdag_b.site)
-        assert res_norm < 1e-8
+        assert res_norm < 1e-10
 
 
 class TestResidualCheck:
@@ -171,13 +171,13 @@ class TestResidualCheck:
         params = pq.WilsonParams(mass=0.1)
         bc = pq.BoundaryCondition()
 
-        x, info = pq.solve(U, b, equation="M", params=params, bc=bc, backend="quda", tol=1e-10)
+        x, info = pq.solve(U, b, equation="M", params=params, bc=bc, backend="quda", tol=1e-12)
 
         assert info.converged
 
         Mx = apply_M(U, x, params, bc)
         res_norm = torch.norm(Mx.site - b.site) / torch.norm(b.site)
-        assert res_norm < 1e-8
+        assert res_norm < 1e-10
 
     def test_mdagm_residual(self, lattice_4448: pq.Lattice) -> None:
         """Verify ||MdagM x - Mdag b|| / ||Mdag b|| is small."""
@@ -188,14 +188,14 @@ class TestResidualCheck:
         params = pq.WilsonParams(mass=0.1)
         bc = pq.BoundaryCondition()
 
-        x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-10)
+        x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-12)
 
         assert info.converged
 
         Mdag_b = apply_Mdag(U, b, params, bc)
         MdagM_x = apply_MdagM(U, x, params, bc)
         res_norm = torch.norm(MdagM_x.site - Mdag_b.site) / torch.norm(Mdag_b.site)
-        assert res_norm < 1e-8
+        assert res_norm < 1e-10
 
 
 class TestCallback:
@@ -223,7 +223,7 @@ class TestCallback:
             params=params,
             bc=bc,
             backend="quda",
-            tol=1e-10,
+            tol=1e-12,
             callback=my_callback,
         )
 
@@ -243,14 +243,14 @@ class TestSolverInfoCorrectness:
         params = pq.WilsonParams(mass=0.1)
         bc = pq.BoundaryCondition()
 
-        _x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-10)
+        _x, info = pq.solve(U, b, equation="MdagM", params=params, bc=bc, backend="quda", tol=1e-12)
 
         assert info.backend == "quda"
         assert info.method == "cg"
         assert info.equation == "MdagM"
         assert info.converged is True
         assert info.iters > 0
-        assert info.final_residual < 1e-10
+        assert info.final_residual < 1e-12
 
     def test_info_m(self, lattice_4444: pq.Lattice) -> None:
         """SolverInfo for M should have correct fields."""
@@ -261,11 +261,11 @@ class TestSolverInfoCorrectness:
         params = pq.WilsonParams(mass=0.1)
         bc = pq.BoundaryCondition()
 
-        _x, info = pq.solve(U, b, equation="M", params=params, bc=bc, backend="quda", tol=1e-10)
+        _x, info = pq.solve(U, b, equation="M", params=params, bc=bc, backend="quda", tol=1e-12)
 
         assert info.backend == "quda"
         assert info.method == "bicgstab"
         assert info.equation == "M"
         assert info.converged is True
         assert info.iters > 0
-        assert info.final_residual < 1e-10
+        assert info.final_residual < 1e-12

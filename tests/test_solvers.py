@@ -104,7 +104,7 @@ class TestReferenceSolveM:
 
         # BiCGStab solve
         x_bicgstab, info = pq.solve(
-            U, b, method="bicgstab", equation="M", params=params, bc=bc, tol=1e-10
+            U, b, method="bicgstab", equation="M", params=params, bc=bc, tol=1e-12
         )
 
         # Compare
@@ -120,8 +120,8 @@ class TestReferenceSolveM:
         ).item()
 
         assert info.converged, f"BiCGStab did not converge: {info}"
-        assert rel_error < 1e-8, f"Relative error too large: {rel_error}"
-        assert residual < 1e-10, f"Residual too large: {residual}"
+        assert rel_error < 1e-9, f"Relative error too large: {rel_error}"
+        assert residual < 1e-11, f"Residual too large: {residual}"
 
 
 class TestReferenceSolveMdagM:
@@ -210,14 +210,14 @@ class TestReferenceSolveMdagM:
         x_dense = torch.linalg.solve(MdagM_dense, rhs)
 
         # CG solve
-        x_cg, info = pq.solve(U, b, method="cg", equation="MdagM", params=params, bc=bc, tol=1e-10)
+        x_cg, info = pq.solve(U, b, method="cg", equation="MdagM", params=params, bc=bc, tol=1e-12)
 
         # Compare
         x_cg_flat = x_cg.site.flatten()
         rel_error = (torch.linalg.norm(x_cg_flat - x_dense) / torch.linalg.norm(x_dense)).item()
 
         assert info.converged, f"CG did not converge: {info}"
-        assert rel_error < 1e-8, f"Relative error too large: {rel_error}"
+        assert rel_error < 1e-9, f"Relative error too large: {rel_error}"
 
 
 class TestSolverResidualMonotonicity:
@@ -301,7 +301,7 @@ class TestEvenOddConsistency:
 
         # Solutions should match
         diff = torch.abs(x_no_precond.site - x_eo.site).max().item()
-        assert diff < 1e-8, f"EO solution differs from unpreconditioned: max diff = {diff}"
+        assert diff < 1e-10, f"EO solution differs from unpreconditioned: max diff = {diff}"
 
     def test_eo_hopping_roundtrip(self) -> None:
         """Test that EO hopping terms are consistent with full operator."""
@@ -360,7 +360,7 @@ class TestSolverDtype:
         b = pq.SpinorField.random(lat)
 
         # Default dtype (complex128)
-        x, _ = pq.solve(U, b, tol=1e-8, maxiter=100)
+        x, _ = pq.solve(U, b, tol=1e-10, maxiter=100)
         assert x.dtype == torch.complex128
 
         # Explicit dtype - skip complex64 as Wilson operator needs internal dtype conversion
@@ -391,7 +391,7 @@ class TestSolverCallbacks:
 
         # Solve with callback
         _x, info = pq.solve(
-            U, b, method="cg", equation="MdagM", params=params, bc=bc, callback=callback, tol=1e-8
+            U, b, method="cg", equation="MdagM", params=params, bc=bc, callback=callback, tol=1e-10
         )
 
         # Verify callback was called
@@ -432,7 +432,14 @@ class TestSolverCallbacks:
 
         # Solve with callback
         _x, info = pq.solve(
-            U, b, method="bicgstab", equation="M", params=params, bc=bc, callback=callback, tol=1e-8
+            U,
+            b,
+            method="bicgstab",
+            equation="M",
+            params=params,
+            bc=bc,
+            callback=callback,
+            tol=1e-10,
         )
 
         # Verify callback was called
@@ -476,7 +483,7 @@ class TestSolverCallbacks:
             params=params,
             bc=bc,
             callback=callback,
-            tol=1e-8,
+            tol=1e-10,
         )
 
         # Verify callback was called (at least once for the outer solve)
@@ -492,7 +499,7 @@ class TestSolverCallbacks:
         b = pq.SpinorField.random(lat)
 
         # Solve without callback (should not error)
-        _x, info = pq.solve(U, b, callback=None, tol=1e-8)
+        _x, info = pq.solve(U, b, callback=None, tol=1e-10)
 
         assert info.converged, "Solver did not converge without callback"
 
@@ -510,7 +517,7 @@ class TestSolverAPI:
         b = pq.SpinorField.random(lat)
 
         # Auto should select MdagM and CG
-        _, info = pq.solve(U, b, equation="auto", method="auto", tol=1e-8)
+        _, info = pq.solve(U, b, equation="auto", method="auto", tol=1e-10)
         assert info.equation == "MdagM"
         assert info.method == "cg"
 
@@ -523,7 +530,7 @@ class TestSolverAPI:
         U = pq.GaugeField.eye(lat)
         b = pq.SpinorField.random(lat)
 
-        _, info = pq.solve(U, b, tol=1e-8)
+        _, info = pq.solve(U, b, tol=1e-10)
 
         # Check all fields exist
         assert isinstance(info.converged, bool)
